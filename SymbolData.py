@@ -33,9 +33,12 @@ class Stroke:
     def asPoints(self):
         return (zip(self.xs, self.ys))
 
-    def scale(self, xmin, xmax, ymin, ymax):
-        self.xs = map( (lambda x: ((x - xmin) * 1.0 / (xmax - xmin))), self.xs)
-        self.ys = map( (lambda y: ((y - ymin) * 1.0 / (ymax - ymin))), self.ys)
+    def scale(self, xmin, xmax, ymin, ymax, xscale, yscale):
+
+        self.xs = map( (lambda x: xscale * ((x - xmin) * 1.0 / (xmax - xmin))), self.xs)
+        self.ys = map( (lambda y: yscale *((y - ymin) * 1.0 / (ymax - ymin))), self.ys)
+        self.xs = map( (lambda x: (x * 2) - xscale), self.xs)
+        self.ys = map( (lambda y: (y * 2) - yscale), self.ys)
 
     def xmin(self):
         return min(self.xs)
@@ -77,8 +80,19 @@ class Symbol:
         self.ymin = min(map( (lambda stroke: stroke.ymin()), self.strokes))
         self.ymax = max(map( (lambda stroke: stroke.ymax()), self.strokes))
 
+        self.xscale = 1.0
+        self.yscale = 1.0
+        self.xdif = self.xmax - self.xmin
+        self.ydif = self.ymax - self.ymin
+        #look out for a divide by zero here.
+        #Would fix it, but still not quite sure what the propper way to handel it is.
+        if (self.xdif > self.ydif):
+            self.yscale = (self.ydif * 1.0) / self.xdif
+        elif (self.ydif > self.xdif):
+            self.xscale = (self.xdif * 1.0) / self.ydif
+            
         for stroke in self.strokes:
-            stroke.scale(self.xmin, self.xmax, self.ymin, self.ymax)
+            stroke.scale(self.xmin, self.xmax, self.ymin, self.ymax, self.xscale, self.yscale)
             
     def __str__(self):
         self.strng = 'Symbol'
