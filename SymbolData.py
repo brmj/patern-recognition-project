@@ -5,6 +5,7 @@ import matplotlib.pyplot as PLT
 from pylab import *
 import os
 import re
+import random
 
 
 
@@ -163,3 +164,29 @@ def filenames(filename):
 def readDirectory(filename, warn=False):
     fnames = filenames(filename)
     return reduce( (lambda a, b : a + b), (map ((lambda f: readFile(f, warn)), fnames)), [])
+
+def symbsByClass(symbols):
+    classes = {}
+    for symbol in symbols:
+        key = symbol.correctClass
+        if (not classes.has_key(key)):
+            classes[key] = []
+        classes[key].append(symbol)
+    return classes
+
+def splitSymbols(symbols, trainPerc):
+    classes = symbsByClass(symbols)
+    training = []
+    testing = []
+    trainTarget = int(round(len(symbols) * trainPerc))
+    testTarget = len(symbols) - trainTarget
+    for clss, symbs in classes.items():
+        #consider dealing with unclassified symbols here if it is a problem.
+        nsymbs = len(symbs)
+        trainNum = int(round(nsymbs * trainPerc))
+        random.shuffle(symbs)
+        training = training + symbs[:trainNum]
+        testing = testing + symbs[trainNum:]
+
+    # Good enough unless the prof says otherwise.
+    return( (training, testing))
