@@ -3,6 +3,8 @@ import matplotlib as MP
 import numpy as NP
 import matplotlib.pyplot as PLT
 from pylab import *
+import os
+import re
 
 
 
@@ -34,9 +36,14 @@ class Stroke:
         return (zip(self.xs, self.ys))
 
     def scale(self, xmin, xmax, ymin, ymax, xscale, yscale):
-
-        self.xs = map( (lambda x: xscale * ((x - xmin) * 1.0 / (xmax - xmin))), self.xs)
-        self.ys = map( (lambda y: yscale * ((y - ymin) * - 1.0 / (ymax - ymin))), self.ys)
+        if (xmax != xmin):
+            self.xs = map( (lambda x: xscale * ((x - xmin) * 1.0 / (xmax - xmin))), self.xs)
+        else:
+            self.xs = map( (lambda x: 0), self.xs)
+        if (ymax != ymin):
+            self.ys = map( (lambda y: yscale * ((y - ymin) * - 1.0 / (ymax - ymin))), self.ys)
+        else:
+            self.ys = map( (lambda y: 0), self.ys)
         self.xs = map( (lambda x: (x * 2) - xscale), self.xs)
         self.ys = map( (lambda y: (y * 2) - yscale), self.ys)
 
@@ -115,7 +122,7 @@ def readStroke(root, strokeNum):
     strokeElem = root.find("./{http://www.w3.org/2003/InkML}trace[@id='" + repr(strokeNum) + "']")
     strokeText = strokeElem.text.strip()
     pointStrings = strokeText.split(',')
-    points = map( (lambda s: map(lambda n: int(n), (s.strip()).split(' '))), pointStrings)
+    points = map( (lambda s: map(lambda n: float(n), (s.strip()).split(' '))), pointStrings)
     return Stroke(points)
 
 def readSymbol(root, tracegroup):
@@ -129,9 +136,30 @@ def readSymbol(root, tracegroup):
         return Symbol(strokes, correctClass=truthAnnot.text)
     
     
-def readFile(filename):
-    tree = ET.parse(filename)
-    root = tree.getroot()
-    tracegroups = root.findall('./*/{http://www.w3.org/2003/InkML}traceGroup')
-    symbols = map((lambda t: readSymbol(root, t)), tracegroups)
-    return symbols
+def readFile(filename, warn=False):
+    try:
+        tree = ET.parse(filename)
+        root = tree.getroot()
+        tracegroups = root.findall('./*/{http://www.w3.org/2003/InkML}traceGroup')
+        symbols = map((lambda t: readSymbol(root, t)), tracegroups)
+        return symbols
+    except:
+        if warn:
+            print 'warning: unparsable file.'
+        return []
+
+def filenames(filename):
+    inkmlre = re.compile('\.inkml$')
+    fnames = []
+    if(os.path.isdir(filename)):
+        for root, dirs, files in os.walk(filename):
+            for name in files:
+                if(inkmlre.search(name) != None):
+                    fnames.append(os.path.join(root, name))
+    elif(inkmlre.search(filename) != None):
+        fnames.append(filename)
+    return fnames
+
+def readDirectory(filename, warn=False):
+    fnames = filenames(filename)
+    return reduce( (lambda a, b : a + b), (map ((lambda f: readFile(f, warn)), fnames)), [])
