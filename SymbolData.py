@@ -36,7 +36,7 @@ class Stroke:
     def scale(self, xmin, xmax, ymin, ymax, xscale, yscale):
 
         self.xs = map( (lambda x: xscale * ((x - xmin) * 1.0 / (xmax - xmin))), self.xs)
-        self.ys = map( (lambda y: yscale *((y - ymin) * 1.0 / (ymax - ymin))), self.ys)
+        self.ys = map( (lambda y: yscale * ((y - ymin) * - 1.0 / (ymax - ymin))), self.ys)
         self.xs = map( (lambda x: (x * 2) - xscale), self.xs)
         self.ys = map( (lambda y: (y * 2) - yscale), self.ys)
 
@@ -60,7 +60,7 @@ class Stroke:
     
 class Symbol:
     """Represents a symbol as a list of strokes. """
-    def __init__(self, strokes, correctClass = '', norm = True):
+    def __init__(self, strokes, correctClass = None, norm = True):
         self.strokes = strokes
         if norm:
             self.normalize()
@@ -103,3 +103,35 @@ class Symbol:
             self.strng = self.strng + '\n' + str(stroke)
         return self.strng
     
+
+
+
+
+# This stuff is used for reading strokes and symbols from files.
+# Code for doing a propper split will also have to go here, I think.
+
+
+def readStroke(root, strokeNum):
+    strokeElem = root.find("./{http://www.w3.org/2003/InkML}trace[@id='" + repr(strokeNum) + "']")
+    strokeText = strokeElem.text.strip()
+    pointStrings = strokeText.split(',')
+    points = map( (lambda s: map(lambda n: int(n), (s.strip()).split(' '))), pointStrings)
+    return Stroke(points)
+
+def readSymbol(root, tracegroup):
+    truthAnnot = tracegroup.find(".//{http://www.w3.org/2003/InkML}annotation[@type='truth']")
+    strokeElems = tracegroup.findall('.//{http://www.w3.org/2003/InkML}traceView')
+    strokeNums = map( (lambda e: int(e.attrib['traceDataRef'])), strokeElems) #ensure that all these are really ints if we have trouble.
+    strokes = map( (lambda n: readStroke(root, n)), strokeNums)
+    if (truthAnnot == None):
+        return Symbol(strokes)
+    else:
+        return Symbol(strokes, correctClass=truthAnnot.text)
+    
+    
+def readFile(filename):
+    tree = ET.parse(filename)
+    root = tree.getroot()
+    tracegroups = root.findall('./*/{http://www.w3.org/2003/InkML}traceGroup')
+    symbols = map((lambda t: readSymbol(root, t)), tracegroups)
+    return symbols
