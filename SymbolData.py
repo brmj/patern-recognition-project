@@ -6,6 +6,7 @@ from pylab import *
 import os
 import re
 import random
+import pickle
 
 
 
@@ -190,3 +191,12 @@ def splitSymbols(symbols, trainPerc):
 
     # Good enough unless the prof says otherwise.
     return( (training, testing))
+
+def pickleSymbols(symbols, filename):
+    with open(filename, 'wb') as f:
+        pickle.dump(symbols, f, pickle.HIGHEST_PROTOCOL)
+        #note that this may cause problems if you try to unpickle with an older version.
+
+def unpickleSymbols(filename):
+    with open(filename, 'rb') as f:
+        return pickle.load(f)
