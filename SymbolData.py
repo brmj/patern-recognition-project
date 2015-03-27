@@ -16,11 +16,11 @@ import pickle
 class Stroke:
     """Represents a stroke as an n by 2 matrix, with the rows of
       the matrix equivelent to points from first to last. """
-    def __init__(self, points):
+    def __init__(self, points, flip = False):
         self.xs = []
         self.ys = []
         for point in points:
-            self.addPoint(point)
+            self.addPoint(point, flip)
 
     def plot(self, show = True, clear = True):
         if clear:
@@ -30,9 +30,12 @@ class Stroke:
         if show:
             PLT.show()
 
-    def addPoint(self, point):
+    def addPoint(self, point, flip = False):
         self.xs.append(point[0])
-        self.ys.append(point[1])
+        if flip:
+            self.ys.append(-1 * point[1])
+        else:
+            self.ys.append(point[1])
 
     def asPoints(self):
         return (zip(self.xs, self.ys))
@@ -43,7 +46,7 @@ class Stroke:
         else:
             self.xs = map( (lambda x: 0), self.xs)
         if (ymax != ymin):
-            self.ys = map( (lambda y: yscale * ((y - ymin) * - 1.0 / (ymax - ymin))), self.ys)
+            self.ys = map( (lambda y: yscale * ((y - ymin) * 1.0 / (ymax - ymin))), self.ys)
         else:
             self.ys = map( (lambda y: 0), self.ys)
         self.xs = map( (lambda x: (x * 2) - xscale), self.xs)
@@ -125,7 +128,7 @@ def readStroke(root, strokeNum):
     strokeText = strokeElem.text.strip()
     pointStrings = strokeText.split(',')
     points = map( (lambda s: map(lambda n: float(n), (s.strip()).split(' '))), pointStrings)
-    return Stroke(points)
+    return Stroke(points, flip=True)
 
 def readSymbol(root, tracegroup):
     truthAnnot = tracegroup.find(".//{http://www.w3.org/2003/InkML}annotation[@type='truth']")
