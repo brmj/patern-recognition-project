@@ -86,25 +86,47 @@ class Symbol:
         if show:
             PLT.show()
 
+    def xmin(self):
+        return min(map( (lambda stroke: stroke.xmin()), self.strokes))
+
+    def xmax(self):
+        return max(map( (lambda stroke: stroke.xmax()), self.strokes))
+
+    def ymin(self):
+        return min(map( (lambda stroke: stroke.ymin()), self.strokes))
+
+    def ymax(self):
+        return max(map( (lambda stroke: stroke.ymax()), self.strokes))
+
+    def points(self):
+        return reduce( (lambda a, b : a + b), (map ((lambda f: f.asPoints()), self.strokes)), [])
+
+    def xs(self):
+        return reduce( (lambda a, b : a + b), (map ((lambda f: f.xs), self.strokes)), [])
+
+    def ys(self):
+        return reduce( (lambda a, b : a + b), (map ((lambda f: f.ys), self.strokes)), [])
+    
     def normalize(self):
-        self.xmin = min(map( (lambda stroke: stroke.xmin()), self.strokes))
-        self.xmax = max(map( (lambda stroke: stroke.xmax()), self.strokes))
-        self.ymin = min(map( (lambda stroke: stroke.ymin()), self.strokes))
-        self.ymax = max(map( (lambda stroke: stroke.ymax()), self.strokes))
 
         self.xscale = 1.0
         self.yscale = 1.0
-        self.xdif = self.xmax - self.xmin
-        self.ydif = self.ymax - self.ymin
+        self.xdif = self.xmax() - self.xmin()
+        self.ydif = self.ymax() - self.ymin()
         #look out for a divide by zero here.
         #Would fix it, but still not quite sure what the propper way to handel it is.
         if (self.xdif > self.ydif):
             self.yscale = (self.ydif * 1.0) / self.xdif
         elif (self.ydif > self.xdif):
             self.xscale = (self.xdif * 1.0) / self.ydif
-            
+
+        self.myxmin = self.xmin()
+        self.myxmax = self.xmax()
+        self.myymin = self.ymin()
+        self.myymax = self.ymax()
+        
         for stroke in self.strokes:
-            stroke.scale(self.xmin, self.xmax, self.ymin, self.ymax, self.xscale, self.yscale)
+            stroke.scale(self.myxmin, self.myxmax, self.myymin, self.myymax, self.xscale, self.yscale)
             
     def __str__(self):
         self.strng = 'Symbol'
