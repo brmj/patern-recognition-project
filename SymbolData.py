@@ -200,6 +200,12 @@ def symbsByClass(symbols):
         classes[key].append(symbol)
     return classes
 
+def classNumbers(symbols, keys=None):
+    if (keys == None):
+        keys = symbsByClass(symbols).keys()
+    keys.sort()
+    return map ((lambda symbol: keys.index(symbol.correctClass)), symbols)
+
 def splitSymbols(symbols, trainPerc):
     classes = symbsByClass(symbols)
     training = []
