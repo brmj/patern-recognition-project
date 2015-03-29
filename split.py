@@ -22,7 +22,7 @@ def main(argv=None):
             except ValueError:
                 goodArgs = False
     else:
-        print "bad number of args:" , len(argv)
+        print("bad number of args:" , len(argv))
         goodArgs = False
 
     if (goodArgs):
@@ -31,9 +31,9 @@ def main(argv=None):
         SymbolData.pickleSymbols(split[0], argv[1])
         if (trainPerc != 1.0):
             SymbolData.pickleSymbols(split[1], argv[2])
-        print "Split complete."
+        print("Split complete.")
     else:
-        print usage
+        print(usage)
     
 
 if __name__ == "__main__":

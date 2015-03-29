@@ -7,7 +7,7 @@ import os
 import re
 import random
 import pickle
-
+import functools
 
 
 """ Contains representations for the relevant data,
@@ -99,13 +99,13 @@ class Symbol:
         return max(map( (lambda stroke: stroke.ymax()), self.strokes))
 
     def points(self):
-        return reduce( (lambda a, b : a + b), (map ((lambda f: f.asPoints()), self.strokes)), [])
+        return functools.reduce( (lambda a, b : a + b), (map ((lambda f: f.asPoints()), self.strokes)), [])
 
     def xs(self):
-        return reduce( (lambda a, b : a + b), (map ((lambda f: f.xs), self.strokes)), [])
+        return functools.reduce( (lambda a, b : a + b), (map ((lambda f: f.xs), self.strokes)), [])
 
     def ys(self):
-        return reduce( (lambda a, b : a + b), (map ((lambda f: f.ys), self.strokes)), [])
+        return functools.reduce( (lambda a, b : a + b), (map ((lambda f: f.ys), self.strokes)), [])
     
     def normalize(self):
 
@@ -172,7 +172,7 @@ def readFile(filename, warn=False):
         return symbols
     except:
         if warn:
-            print 'warning: unparsable file.'
+            print("warning: unparsable file.")
         return []
 
 def filenames(filename):
