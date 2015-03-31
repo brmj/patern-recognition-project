@@ -11,8 +11,6 @@ def train(model, training):
 symbols = SymbolData.unpickleSymbols("train.dat")
 symbols = SymbolData.normalize(symbols,99)
 
-
 Features.showImg(symbols[3])
-x = Features.normalize(symbols[0],99)
 
 f = Features.features(symbols[0:2])
