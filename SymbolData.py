@@ -218,7 +218,7 @@ def symbsByClass(symbols):
     classes = {}
     for symbol in symbols:
         key = symbol.correctClass
-        if (not classes.has_key(key)):
+        if (key not in classes):
             classes[key] = []
         classes[key].append(symbol)
     return classes
@@ -227,7 +227,7 @@ def classNumbers(symbols, keys=None):
     if (keys == None):
         keys = list(symbsByClass(symbols).keys())
     keys.sort()
-    return map ((lambda symbol: keys.index(symbol.correctClass)), symbols)
+    return list(map((lambda symbol: keys.index(symbol.correctClass)), symbols))
 
 def splitSymbols(symbols, trainPerc):
     classes = symbsByClass(symbols)
