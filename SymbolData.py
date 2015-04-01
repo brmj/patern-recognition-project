@@ -217,7 +217,7 @@ def symbsByClass(symbols):
     classes = {}
     for symbol in symbols:
         key = symbol.correctClass
-        if (not classes.has_key(key)):
+        if (key not in classes):
             classes[key] = []
         classes[key].append(symbol)
     return classes
@@ -226,7 +226,7 @@ def classNumbers(symbols, keys=None):
     if (keys == None):
         keys = symbsByClass(symbols).keys()
     keys.sort()
-    return map ((lambda symbol: keys.index(symbol.correctClass)), symbols)
+    return list(map((lambda symbol: keys.index(symbol.correctClass)), symbols))
 
 def splitSymbols(symbols, trainPerc):
     classes = symbsByClass(symbols)
@@ -253,3 +253,19 @@ def pickleSymbols(symbols, filename):
 def unpickleSymbols(filename):
     with open(filename, 'rb') as f:
         return pickle.load(f)
+
+# Normalize the data such that y-> (0,99) and maintain the aspect ratio
+def normalize(symbols,scale):
+#def normalize(symbol,scale):
+    i=0
+    for symbol in symbols:
+        xmin = min(symbol.xs())
+        ymin = min(symbol.ys())
+        for i in range(len(symbol.strokes)):
+            for j in range(len(symbol.strokes[i].xs)):
+                symbol.strokes[i].xs[j] = (symbol.strokes[i].xs[j]-xmin)*scale/2
+                symbol.strokes[i].ys[j] = (symbol.strokes[i].ys[j]-ymin)*scale/2
+            symbols[i] = symbol
+            i+=1
+    return(symbols)
+#    return(symbol)
