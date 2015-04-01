@@ -1,7 +1,7 @@
 import numpy as NP
 #import SymbolData
 from skimage.morphology import disk
-from skimage.filter import rank
+from skimage.filters import rank
 import matplotlib.pyplot as plt
 
 # This is a skeleton of a file that will contain functions for various features.

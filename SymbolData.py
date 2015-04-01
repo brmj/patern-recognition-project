@@ -9,6 +9,7 @@ import random
 import pickle
 import functools
 import itertools
+from functools import reduce
 
 
 """ Contains representations for the relevant data,
@@ -39,19 +40,19 @@ class Stroke:
             self.ys.append(point[1])
 
     def asPoints(self):
-        return (zip(self.xs, self.ys))
+        return (list(zip(self.xs, self.ys)))
 
     def scale(self, xmin, xmax, ymin, ymax, xscale, yscale):
         if (xmax != xmin):
-            self.xs = map( (lambda x: xscale * ((x - xmin) * 1.0 / (xmax - xmin))), self.xs)
+            self.xs = list(map( (lambda x: xscale * ((x - xmin) * 1.0 / (xmax - xmin))), self.xs))
         else:
-            self.xs = map( (lambda x: 0), self.xs)
+            self.xs = list(map( (lambda x: 0), self.xs))
         if (ymax != ymin):
-            self.ys = map( (lambda y: yscale * ((y - ymin) * 1.0 / (ymax - ymin))), self.ys)
+            self.ys = list(map( (lambda y: yscale * ((y - ymin) * 1.0 / (ymax - ymin))), self.ys))
         else:
-            self.ys = map( (lambda y: 0), self.ys)
-        self.xs = map( (lambda x: (x * 2) - xscale), self.xs)
-        self.ys = map( (lambda y: (y * 2) - yscale), self.ys)
+            self.ys = list(map( (lambda y: 0), self.ys))
+        self.xs = list(map( (lambda x: (x * 2) - xscale), self.xs))
+        self.ys = list(map( (lambda y: (y * 2) - yscale), self.ys))
 
     def xmin(self):
         return min(self.xs)
@@ -93,25 +94,25 @@ class Symbol:
             PLT.show()
 
     def xmin(self):
-        return min(map( (lambda stroke: stroke.xmin()), self.strokes))
+        return min(list(map( (lambda stroke: stroke.xmin()), self.strokes)))
 
     def xmax(self):
-        return max(map( (lambda stroke: stroke.xmax()), self.strokes))
+        return max(list(map( (lambda stroke: stroke.xmax()), self.strokes)))
 
     def ymin(self):
-        return min(map( (lambda stroke: stroke.ymin()), self.strokes))
+        return min(list(map( (lambda stroke: stroke.ymin()), self.strokes)))
 
     def ymax(self):
-        return max(map( (lambda stroke: stroke.ymax()), self.strokes))
+        return max(list(map( (lambda stroke: stroke.ymax()), self.strokes)))
 
     def points(self):
-        return functools.reduce( (lambda a, b : a + b), (map ((lambda f: f.asPoints()), self.strokes)), [])
+        return functools.reduce( (lambda a, b : a + b), (list(map ((lambda f: f.asPoints()), self.strokes))), [])
 
     def xs(self):
-        return functools.reduce( (lambda a, b : a + b), (map ((lambda f: f.xs), self.strokes)), [])
+        return functools.reduce( (lambda a, b : a + b), (list(map ((lambda f: f.xs), self.strokes))), [])
 
     def ys(self):
-        return functools.reduce( (lambda a, b : a + b), (map ((lambda f: f.ys), self.strokes)), [])
+        return functools.reduce( (lambda a, b : a + b), (list(map ((lambda f: f.ys), self.strokes))), [])
     
     def normalize(self):
 
@@ -145,7 +146,7 @@ class Symbol:
             self.count = self.count + 1
 
         if (len(self.strokes) > 1):
-            for n1, n2 in itertools.permutations(range(start, self.count), 2):
+            for n1, n2 in itertools.permutations(list(range(start, self.count)), 2):
                 self.line = "E, " + str(n1) + ", " + str(n2) + ", " + clss + ", 1.0"
                 self.lines.append(self.line)
         return self.lines
@@ -171,14 +172,14 @@ def readStroke(root, strokeNum):
     strokeElem = root.find("./{http://www.w3.org/2003/InkML}trace[@id='" + repr(strokeNum) + "']")
     strokeText = strokeElem.text.strip()
     pointStrings = strokeText.split(',')
-    points = map( (lambda s: map(lambda n: float(n), (s.strip()).split(' '))), pointStrings)
+    points = list(map( (lambda s: [float(n) for n in (s.strip()).split(' ')]), pointStrings))
     return Stroke(points, flip=True)
 
 def readSymbol(root, tracegroup):
     truthAnnot = tracegroup.find(".//{http://www.w3.org/2003/InkML}annotation[@type='truth']")
     strokeElems = tracegroup.findall('.//{http://www.w3.org/2003/InkML}traceView')
-    strokeNums = map( (lambda e: int(e.attrib['traceDataRef'])), strokeElems) #ensure that all these are really ints if we have trouble.
-    strokes = map( (lambda n: readStroke(root, n)), strokeNums)
+    strokeNums = list(map( (lambda e: int(e.attrib['traceDataRef'])), strokeElems)) #ensure that all these are really ints if we have trouble.
+    strokes = list(map( (lambda n: readStroke(root, n)), strokeNums))
     if (truthAnnot == None):
         return Symbol(strokes)
     else:
@@ -190,7 +191,7 @@ def readFile(filename, warn=False):
         tree = ET.parse(filename)
         root = tree.getroot()
         tracegroups = root.findall('./*/{http://www.w3.org/2003/InkML}traceGroup')
-        symbols = map((lambda t: readSymbol(root, t)), tracegroups)
+        symbols = list(map((lambda t: readSymbol(root, t)), tracegroups))
         return symbols
     except:
         if warn:
@@ -211,7 +212,7 @@ def filenames(filename):
 
 def readDirectory(filename, warn=False):
     fnames = filenames(filename)
-    return reduce( (lambda a, b : a + b), (map ((lambda f: readFile(f, warn)), fnames)), [])
+    return reduce( (lambda a, b : a + b), (list(map ((lambda f: readFile(f, warn)), fnames))), [])
 
 def symbsByClass(symbols):
     classes = {}
@@ -224,7 +225,7 @@ def symbsByClass(symbols):
 
 def classNumbers(symbols, keys=None):
     if (keys == None):
-        keys = symbsByClass(symbols).keys()
+        keys = list(symbsByClass(symbols).keys())
     keys.sort()
     return list(map((lambda symbol: keys.index(symbol.correctClass)), symbols))
 
@@ -234,7 +235,7 @@ def splitSymbols(symbols, trainPerc):
     testing = []
     trainTarget = int(round(len(symbols) * trainPerc))
     testTarget = len(symbols) - trainTarget
-    for clss, symbs in classes.items():
+    for clss, symbs in list(classes.items()):
         #consider dealing with unclassified symbols here if it is a problem.
         nsymbs = len(symbs)
         trainNum = int(round(nsymbs * trainPerc))

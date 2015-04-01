@@ -30,7 +30,7 @@ Created on Sun Mar 29 16:58:44 2015
 ##        - Francisco Alvaro: falvaro@dsic.upv.es
 ##        - Richard Zanibbi: rlaz@cs.rit.edu 
 
-from __future__ import division
+
 import xml.dom.minidom as minidom
 import math
 import sys
@@ -54,6 +54,7 @@ from scipy.sparse.csgraph import minimum_spanning_tree
 from scipy.sparse import csr_matrix
 import subprocess
 import shutil
+from functools import reduce
 
 sys.setrecursionlimit(10000)
 ## load the classifier
@@ -63,11 +64,11 @@ WIDE_THRESHOLD = 2.5
 NARROW_THRESHOLD = 0.3
 
 def zipwith(fun, *args):
-        return map(lambda x: fun(*x), zip(*args))
+        return [fun(*x) for x in zip(*args)]
         
 def distance(point1, point2):
         box = zipwith(lambda x,y: abs(x - y), point1, point2)
-        return math.sqrt(sum(map(lambda x: x**2, box)))
+        return math.sqrt(sum([x**2 for x in box]))
 
 class Equation(object):
         def __init__(self):
@@ -122,7 +123,7 @@ class Equation(object):
                                 group.append(self.reverse_id_map[int(stroke.getAttribute('traceDataRef'))])
 
                         self.segments_truth.add(Segment(group, symbol))
-                self.segments = SegmentSet.init_unconnected_strokes([s.id for s in self.strokes.values()])
+                self.segments = SegmentSet.init_unconnected_strokes([s.id for s in list(self.strokes.values())])
 
                 return self
                 
@@ -219,7 +220,7 @@ class Equation(object):
         
         def test_classification(self):
                 correct = 0
-                for st in self.strokes.keys():
+                for st in list(self.strokes.keys()):
                         if self.segment_for_stroke(st).symbol == self.segment_truth_for_stroke(st).symbol:
                                 correct += 1
                 return (correct, len(self.strokes))
@@ -233,7 +234,7 @@ class Equation(object):
 
                   ## preprocessing the input equation
                   self = equation_preprocessing(self)
-                  pairs = zip(self.strokes.values(), self.strokes.values()[1:])
+                  pairs = list(zip(list(self.strokes.values()), list(self.strokes.values())[1:]))
 
                   for s1, s2 in pairs:
                           current_stroke = s1
@@ -287,7 +288,7 @@ class Equation(object):
 
                                                 
         def merge_touching(self):
-                for s1, s2 in itertools.combinations(self.strokes.values(), 2):
+                for s1, s2 in itertools.combinations(list(self.strokes.values()), 2):
                         if s1.bb_intersects(s2):
                                 if s1.intersects(s2):
                                         self.segments.merge_strokes(s1.id, s2.id)
@@ -295,7 +296,7 @@ class Equation(object):
         def find_closest_stroke(self, stroke):
                 d = 9001
                 closest = -1
-                for id, s in self.strokes.items():
+                for id, s in list(self.strokes.items()):
                         if s != stroke:
                                 if d > closest_distance(s, stroke):
                                         closest = id
@@ -307,7 +308,7 @@ class Equation(object):
                         widths = []
                         heights = []
                         diags = []
-                        for s in self.strokes.values():
+                        for s in list(self.strokes.values()):
                                 mins, maxs = s.extents
                                 widths.append(maxs[0] - mins[0])
                                 heights.append(maxs[1] - mins[1])
@@ -321,7 +322,7 @@ class Equation(object):
         def get_wide_strokes(self):
                 avg_width = self.avg_extents()[0]
                 wide_strokes = set()
-                for s in self.strokes.values():
+                for s in list(self.strokes.values()):
                         if s.width > WIDE_THRESHOLD * avg_width:
                                 wide_strokes.add(s)
                 return wide_strokes
@@ -329,7 +330,7 @@ class Equation(object):
         def get_dots(self, thresh):
                 avg_width, avg_height, avg_diag = self.avg_extents()
                 dots = set()
-                for s in self.strokes.values():
+                for s in list(self.strokes.values()):
                         if s.half_diag < thresh * avg_diag:
                                 dots.add(s)
                 return dots
@@ -485,12 +486,12 @@ class FuzzySegment(Segment):
 
         def union(self, other, newtransition={}):
                 strokes = self.strokes.union(other.strokes)
-                transitions = dict(self.transitions.items() + other.transitions.items() + newtransition.items())
+                transitions = dict(list(self.transitions.items()) + list(other.transitions.items()) + list(newtransition.items()))
                 return FuzzySegment(strokes, transitions)
 
         def combinations(self, max_group=4):
                 segments = [SegmentSet.init_unconnected_strokes(self.strokes)]
-                for (src, dst), p in sorted(self.transitions.items(), key=lambda x: x[1], reverse=True):
+                for (src, dst), p in sorted(list(self.transitions.items()), key=lambda x: x[1], reverse=True):
                         together = []
                         if p > 0.0:
                                 for s in segments:
@@ -509,7 +510,7 @@ class FuzzySegment(Segment):
 
         def best_combination(self):
                 s = SegmentSet.init_unconnected_strokes(self.strokes)
-                for (src, dst), p in sorted(self.transitions.items(), key=lambda x: x[1], reverse=True):
+                for (src, dst), p in sorted(list(self.transitions.items()), key=lambda x: x[1], reverse=True):
                         if p > 0.5:
                                 s.merge_strokes(src, dst)
                                 s.prob *= p
@@ -519,7 +520,7 @@ class FuzzySegment(Segment):
 
         def split_weakest(self):
                 newset = FuzzySegmentSet.init_unconnected_strokes(self.strokes)
-                transitions = sorted(self.transitions.items(), key=lambda x: x[1], reverse=True)[:-1]
+                transitions = sorted(list(self.transitions.items()), key=lambda x: x[1], reverse=True)[:-1]
                 for (src, dst), p in transitions:
                         newset.merge_strokes(src, dst, p)
                 return newset
@@ -814,7 +815,7 @@ class Stroke(object):
 
         ## context shape features from Ling's thesis
         def context_shape_features(self, other):
-                context_shape = [[0 for x in xrange(5)] for x in xrange(12)]
+                context_shape = [[0 for x in range(5)] for x in range(12)]
                 self_center = self.center
                 self_diag = 2.0*self.half_diag
                 point_number = 0 ## point number is the number of points in the context of the reference point
@@ -903,7 +904,7 @@ class Stroke(object):
         ## context shape features from Ling's thesis, but the length of radius is flexible to make the circle can
         ## cover but only can cover the two strokes in the stroke pair 
         def context_shape_features_1NN(self, other):
-                context_shape = [[0 for x in xrange(5)] for x in xrange(12)]
+                context_shape = [[0 for x in range(5)] for x in range(12)]
                 self_center = self.center
                 self_diag = 0.0
                 point_number = 0 ## point number is the number of points in the context of the reference point
@@ -1060,15 +1061,15 @@ def count_nonadjacent_strokes(path):
                                         if i not in s:
                                                 count += 1
                                                 print(s)
-        print('%d segments contain non-adjacent strokes' % count)
+        print(('%d segments contain non-adjacent strokes' % count))
         
 def split_stats(stats, mapping, partition, filtering=None, filter_outliers=True):
     if filter_outliers:
-        stats = filter(lambda x: not x.is_wide and not x.is_dot, stats)
+        stats = [x for x in stats if not x.is_wide and not x.is_dot]
     if filtering:
-        stats = filter(filtering, stats)
-    fst = map(mapping, filter(partition, stats))
-    snd = map(mapping, filter(lambda x: not partition(x), stats))
+        stats = list(filter(filtering, stats))
+    fst = list(map(mapping, list(filter(partition, stats))))
+    snd = list(map(mapping, [x for x in stats if not partition(x)]))
     return fst, snd
     
 def show_hist(data):
@@ -1086,13 +1087,13 @@ def test_dots(path):
                 for i, filename in enumerate(files):
                         eq = Equation.from_inkml(os.path.join(path, filename))
                         dots = eq.get_dots(t)
-                        symbs = map(lambda x: eq.segment_truth_for_stroke(x.id).symbol, dots)
-                        num_correct += len(filter(lambda x: x in dot_symbols, symbs))
+                        symbs = [eq.segment_truth_for_stroke(x.id).symbol for x in dots]
+                        num_correct += len([x for x in symbs if x in dot_symbols])
                         num_total += len(symbs)
-                        num_truth += len(filter(lambda x: x.symbol in dot_symbols, eq.segments_truth))
-                print('\nthreshold: %.2f' % (t))
-                print('precision:\t%f\t(%d/%d)' % (float(num_correct) / num_total, num_correct, num_total))
-                print('recall:\t\t%f\t(%d/%d)' % (float(num_correct) / num_truth, num_correct, num_truth))
+                        num_truth += len([x for x in eq.segments_truth if x.symbol in dot_symbols])
+                print(('\nthreshold: %.2f' % (t)))
+                print(('precision:\t%f\t(%d/%d)' % (float(num_correct) / num_total, num_correct, num_total)))
+                print(('recall:\t\t%f\t(%d/%d)' % (float(num_correct) / num_truth, num_correct, num_truth)))
         
         
 def get_distance_stats(path):
@@ -1106,7 +1107,7 @@ def get_distance_stats(path):
                         wides = eq.get_wide_strokes()
                         dots = eq.get_dots()
                         
-                        pairs = zip(eq.strokes.values(), eq.strokes.values()[1:])
+                        pairs = list(zip(list(eq.strokes.values()), list(eq.strokes.values())[1:]))
                         for s1, s2 in pairs:
                                 try:
                                         seg1 = eq.segment_truth_for_stroke(s1.id)
@@ -1183,7 +1184,7 @@ def DPRL_CROHME2014(path, output_path):
 
         files = [f for f in os.listdir(path) if os.path.splitext(f)[1] == '.inkml']
         for i, filename in enumerate(files):
-                print('%s (%d/%d)' % (filename, i + 1, len(files)))
+                print(('%s (%d/%d)' % (filename, i + 1, len(files))))
                 ## read the inkml file
                 eq = Equation.from_inkml(os.path.join(path, filename))
                 O_eq = copy.deepcopy(eq)
@@ -1507,8 +1508,8 @@ def CROHME2013_parsing_MST(symbol_candidate_list):
         for i in range(symbol_num):
                 left_side.append(symbol_candidate_list[i].extents[0][0])
 
-        sorted_index = sorted(range(symbol_num), key=lambda k: left_side[k])
-        symbol_use =[0 for x in xrange(int(symbol_num))]## to indidate the symbol is used or not
+        sorted_index = sorted(list(range(symbol_num)), key=lambda k: left_side[k])
+        symbol_use =[0 for x in range(int(symbol_num))]## to indidate the symbol is used or not
         baseline_symbol = []
         sub_expression_list = []
 
@@ -1570,7 +1571,7 @@ def CROHME2013_parsing_MST(symbol_candidate_list):
         for i in range(baseline_symbol_num):
                 baseline_left_side.append(baseline_symbol[i].extents[0][0])
 
-        baseline_sorted_index = sorted(range(baseline_symbol_num), key=lambda k: baseline_left_side[k])
+        baseline_sorted_index = sorted(list(range(baseline_symbol_num)), key=lambda k: baseline_left_side[k])
 
 ##        baseline_R = []
         if baseline_symbol_num > 1:
@@ -1673,7 +1674,7 @@ def is_inside(dominant_symbol, child_symbol):
 
 def get_MST(symbol_candidate_list):
         symbol_num = len(symbol_candidate_list)
-        symbol_dis = [[0.0 for x in xrange(int(symbol_num))] for x in xrange(int(symbol_num))]
+        symbol_dis = [[0.0 for x in range(int(symbol_num))] for x in range(int(symbol_num))]
         for i in range(symbol_num):
                 for j in range(symbol_num):
                         if j > i:
@@ -1833,7 +1834,7 @@ def resampling(smooth_stroke):
 ## current_stroke is the reference stroke
 ## the radius will be flexible to can but only can can its 3 nearest neighbor
 def get_3NN_background_scf(eq, current_stroke):
-        context_shape = [[0 for x in xrange(5)] for x in xrange(12)]
+        context_shape = [[0 for x in range(5)] for x in range(12)]
         self_center = current_stroke.center ## reference_center
         self_diag = 0 ## reference_diag
         point_number = 0
@@ -1849,11 +1850,11 @@ def get_3NN_background_scf(eq, current_stroke):
                         one_Nearest_Dis = current_stroke.closest_distance(one_stroke)
                         Nearest_Dis.append(one_Nearest_Dis)
                 s = Nearest_Dis
-                sorted_index = sorted(range(len(s)), key = lambda k:s[k])
+                sorted_index = sorted(list(range(len(s))), key = lambda k:s[k])
                 NN_id = sorted_index[:neighbor_num]
         else:
                 ## if the stroke number is less than 5, then it will include all the strokes
-                NN_id = range(len(eq.strokes))
+                NN_id = list(range(len(eq.strokes)))
 
         ## find the self_diag
         temp_self_diag = 0.0
@@ -1922,7 +1923,7 @@ def get_3NN_background_scf(eq, current_stroke):
 ## get the global shape context feature
 ## current_stroke is the reference stroke
 def get_global_scf(eq, current_stroke):
-        context_shape = [[0 for x in xrange(5)] for x in xrange(12)]
+        context_shape = [[0 for x in range(5)] for x in range(12)]
         self_center = current_stroke.center ## reference_center
         self_diag = 0.0 ## reference_diag
         point_number = 0

@@ -22,7 +22,7 @@ def main(argv=None):
             except ValueError:
                 goodArgs = False
     else:
-        print("bad number of args:" , len(argv))
+        print(("bad number of args:" , len(argv)))
         goodArgs = False
 
     if (goodArgs):
