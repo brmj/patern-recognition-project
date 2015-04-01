@@ -8,6 +8,7 @@ import re
 import random
 import pickle
 import functools
+import itertools
 
 
 """ Contains representations for the relevant data,
@@ -63,7 +64,12 @@ class Stroke:
 
     def ymax(self):
         return max(self.ys)
-        
+
+
+    def lg_str(self, ident, clss):
+        assert (isinstance(ident, int))
+        return "N, " + str(ident) + ", " + clss + ", 1.0"
+    
         
     def __str__(self):
         return 'Stroke:\n' + str(self.asPoints())
@@ -127,6 +133,22 @@ class Symbol:
         
         for stroke in self.strokes:
             stroke.scale(self.myxmin, self.myxmax, self.myymin, self.myymax, self.xscale, self.yscale)
+
+    # Given a class, this produces lines for an lg file.
+    def lg_lines(self, clss, start = 0, name = None):
+        self.lines = []
+        if (name != None):
+            self.lines.append( "# Object: " + name + " .")
+        self.count = start
+        for stroke in self.strokes:
+            self.lines.append(stroke.lg_str(self.count, clss))
+            self.count = self.count + 1
+
+        if (len(self.strokes) > 1):
+            for n1, n2 in itertools.permutations(range(start, self.count), 2):
+                self.line = "E, " + str(n1) + ", " + str(n2) + ", " + clss + ", 1.0"
+                self.lines.append(self.line)
+        return self.lines
             
     def __str__(self):
         self.strng = 'Symbol'
