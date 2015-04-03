@@ -155,20 +155,20 @@ class Expression:
         self.name = name
         self.symbols = symbols
         self.relations = relations
+        self.classes = []
 
 
-
-    def writeLG (self, directory, classes): #this _will_ probably break on windows style file paths.
+    def writeLG (self, directory): #this _will_ probably break on windows style file paths.
         #Is there something cleaner from the libraries we can use?
         if directory[len(directory) -1] == '/':
             self.filename = directory + '/' + self.name + '.lg'
         else:
             self.filename = directory + self.name + '.lg'
 
-        assert (len (classes) == len (self.symbols))
+        assert (len (self.classes) == len (self.symbols))
         #It appears python's map function is clever enough to impersonate haskell's "zipwith".
         #Who would have thought? I'm impressed.
-        self.symblines = list(map ((lambda s, c: s.lgline(c) ) , self.symbols, classes))
+        self.symblines = list(map ((lambda s, c: s.lgline(c) ) , self.symbols, self.classes))
 
         with (open (self.filename, 'w')) as f:
             
@@ -265,6 +265,13 @@ def filenames(filename):
 def readDirectory(filename, warn=False):
     fnames = filenames(filename)
     return reduce( (lambda a, b : a + b), (list(map ((lambda f: readFile(f, warn)), fnames))), [])
+
+def readInkmlDirectory(filename, lgdir, warn=False):
+    fnames = filenames(filename)
+    return list(map((lambda f: readInkml(f, lgdir, warn)), fnames))
+
+def allSymbols(inkmls):
+    return reduce( (lambda a, b: a + b), (list(map (lambda i: i.symbols), inkmls))
 
 def symbsByClass(symbols):
     classes = {}

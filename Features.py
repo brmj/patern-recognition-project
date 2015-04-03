@@ -2,12 +2,16 @@ import numpy as NP
 #import SymbolData
 from skimage.morphology import disk
 from skimage.filters import rank
+from sklearn import preprocessing
+from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 
 # This is a skeleton of a file that will contain functions for various features.
 
 def features(symbols):
     return list(map ( (lambda symbol: symbolFeatures(symbol)), symbols))
+
+
 
 # Linear Interpolation
 def interp( x12, y12, t):
@@ -48,7 +52,7 @@ def showImg(symbol):
     plt.show()
     
 # Get the features from a symbol
-def symbolFeatures(symbol):
+def symbolFeatures(symbol, n_pca = None):
     f = NP.array([])
     
     #Call feature functions here like so:
@@ -59,8 +63,12 @@ def symbolFeatures(symbol):
     I = getImg(symbol)
     fkiFeat = getFKIfeatures(I)
     fki = getMeanStd(fkiFeat)
-    f = NP.append(f,fki)    
-    return f
+    f = NP.append(f,fki)
+
+    #the minimum, basic scaling needed for many classifiers to work corectly.
+    f_scaled = preprocessing.scale(f)
+    # would have put PCA here, but that doesn't play nice with the way it needs to be used.
+    return f_scaled
 
 # Some really simple global properties to start us off.
     
