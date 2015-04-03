@@ -1,6 +1,7 @@
 import numpy as NP
 import sklearn
 import sklearn.ensemble
+import sklearn.decomposition
 import Features
 import SymbolData
 import matplotlib.pyplot as plt
@@ -30,13 +31,19 @@ def makeRF():
     #play with the options once we have a reasonable set of features to experiment with.
     return sklearn.ensemble.RandomForestClassifier()
         
-def train(model, training, keys= None):
+def train(model, training, keys= None, pca_num=None):
     if model == "1nn":
         model = OneNN()
     elif model == "rf":
         model = makeRF()
+    f = Features.features(training)
+    pca = None
+    if (pca_num != None):
+        pca = sklearn.decomposition.PCA(n_components=pca_num)
+        pca.fit(f)
+        f = pca.transform(f)
     model.fit(Features.features(training), SymbolData.classNumbers(training, keys))
-    return model
+    return (model, pca)
 
 """
 

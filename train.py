@@ -25,7 +25,7 @@ def main(argv=None):
                 #things will break in ways that are hard for me to test for if it isn't.
 
         symbs = SymbolData.allSymbols(exprs)
-        trained = Classification.train(model, symbs)
+        trained, pca = Classification.train(model, symbs, classes)
 
         print ("Done training.")
         if True:
