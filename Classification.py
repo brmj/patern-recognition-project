@@ -17,7 +17,7 @@ class OneNN:
         return self
 
     def predict(self, samples):
-        return numpy.array(list( map ((lambda s: self.nearest(s)), samples))) #have no idea why it breaks if I go straight to array.
+        return NP.array(list( map ((lambda s: self.nearest(s)), samples))) #have no idea why it breaks if I go straight to array.
 
     def nearest(self, sample):
         self.sqrs = NP.power(self.features - sample, 2)
@@ -30,12 +30,12 @@ def makeRF():
     #play with the options once we have a reasonable set of features to experiment with.
     return sklearn.ensemble.RandomForestClassifier()
         
-def train(model, training):
+def train(model, training, keys= None):
     if model == "1nn":
         model = OneNN()
     elif model == "rf":
         model = makeRF()
-    model.fit(Features.features(training), SymbolData.classNumbers(training))
+    model.fit(Features.features(training), SymbolData.classNumbers(training, keys))
     return model
 
 """

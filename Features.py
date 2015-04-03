@@ -60,11 +60,13 @@ def symbolFeatures(symbol, n_pca = None):
     f = NP.append(f,ymean(symbol))
     f = NP.append(f,xvar(symbol))
     f = NP.append(f,yvar(symbol))
+
+    '''
     I = getImg(symbol)
     fkiFeat = getFKIfeatures(I)
     fki = getMeanStd(fkiFeat)
-    f = NP.append(f,fki)
-
+    f = NP.append(f,fki) '''
+    
     #the minimum, basic scaling needed for many classifiers to work corectly.
     f_scaled = preprocessing.scale(f)
     # would have put PCA here, but that doesn't play nice with the way it needs to be used.
