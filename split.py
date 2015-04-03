@@ -2,7 +2,7 @@ import sys
 import SymbolData
 
 
-usage = "Usage: $ python split.py (file.inkml | directory) trainingFilename [testingFilename [trainingPerc]]"
+usage = "Usage: $ python split.py (file.inkml | directory) lgdir trainingFilename [testingFilename [trainingPerc]]"
 
 def main(argv=None):
     if argv is None:
@@ -11,12 +11,12 @@ def main(argv=None):
     trainPerc = 2.0 / 3.0
     
     goodArgs = True
-    if (len (argv) >= 2 and len (argv) <= 4):
-        if (len (argv) == 2):
+    if (len (argv) >= 3 and len (argv) <= 5):
+        if (len (argv) == 3):
             trainPerc = 1.0
-        if (len (argv) == 4):
+        if (len (argv) == 5):
             try:
-                trainPerc = float(argv[3])
+                trainPerc = float(argv[4])
                 if (trainPerc > 1 or trainPerc < 0):
                     goodArgs = False
             except ValueError:
@@ -26,11 +26,12 @@ def main(argv=None):
         goodArgs = False
 
     if (goodArgs):
-        symbols = SymbolData.readDirectory(argv[0])
-        split = SymbolData.splitSymbols(symbols, trainPerc)
-        SymbolData.pickleSymbols(split[0], argv[1])
+        exprs = SymbolData.readInkmlDirectory(argv[0], argv[1])
+        classes = SymbolData.exprClasses(exprs)
+        split = SymbolData.splitExpressions(exprs, trainPerc)
+        SymbolData.pickleSymbols((split[0], classes), argv[2])
         if (trainPerc != 1.0):
-            SymbolData.pickleSymbols(split[1], argv[2])
+            SymbolData.pickleSymbols((split[1], classes), argv[3])
         print("Split complete.")
     else:
         print(usage)

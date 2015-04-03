@@ -228,7 +228,7 @@ def readFile(filename, warn=False):
 def readInkml(filename, lgdir, warn=False):
     symbols = readFile(filename, warn)
     rdir, filenm = os.path.split(filename)
-    name = filenm.rstrip('.inkml')
+    name, ext = os.path.splitext(filenm)
     if lgdir[len(lgdir) -1] == '/':
         lgfile = lgdir + '/' + name + '.lg'
     else:
@@ -238,6 +238,7 @@ def readInkml(filename, lgdir, warn=False):
     
 
 def readLG(filename):
+
     with open(filename) as f:
         lines = f.readlines()
 
@@ -271,7 +272,7 @@ def readInkmlDirectory(filename, lgdir, warn=False):
     return list(map((lambda f: readInkml(f, lgdir, warn)), fnames))
 
 def allSymbols(inkmls):
-    return reduce( (lambda a, b: a + b), (list(map (lambda i: i.symbols), inkmls))
+    return reduce( (lambda a, b: a + b), (list(map ((lambda i: i.symbols), inkmls))))
 
 def symbsByClass(symbols):
     classes = {}
@@ -281,6 +282,14 @@ def symbsByClass(symbols):
             classes[key] = []
         classes[key].append(symbol)
     return classes
+
+def symbClasses(symbols):
+    keys = list(symbsByClass(symbols).keys())
+    keys.sort()
+    return keys
+
+def exprClasses(inkmls):
+    return symbClasses(allSymbols(inkmls))
 
 def classNumbers(symbols, keys=None):
     if (keys == None):
@@ -305,6 +314,22 @@ def splitSymbols(symbols, trainPerc):
     # Good enough unless the prof says otherwise.
     return( (training, testing))
 
+#splits on a per-expression basis instead.
+def splitExpressions(expressions, trainPerc):
+    training = []
+    testing = []
+    exprs = expressions
+    random.shuffle(exprs)
+    trainNum = int(round (len(exprs) * trainPerc))
+    training = training + exprs[:trainNum]
+    testing = testing + exprs[trainNum:]
+
+    #fancy stuff to ensure a good split goes here.
+    #will try and add that today.
+
+    return( (training, testing))
+
+    
 def pickleSymbols(symbols, filename):
     with open(filename, 'wb') as f:
         pickle.dump(symbols, f, pickle.HIGHEST_PROTOCOL)
