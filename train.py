@@ -1,4 +1,5 @@
 import sys
+import pickle
 import SymbolData
 import Classification
 import Features
@@ -29,11 +30,14 @@ def main(argv=None):
 
         print ("Done training.")
         if True:
-            pred = model.predict(Features.features(symbs))
+            f = Features.features(symbs)
+            if (pca != None):
+                f = pca.transform(f)
+            pred = model.predict(f)
             print( "Accuracy on training set : ", accuracy_score(SymbolData.classNumbers(symbs, classes), pred))
 
-        #code to write out model and any PCA stuff we need goes here.
-    
+        with open(argv[2], 'wb') as f:
+            pickle.dump((trained, pca), f, pickle.HIGHEST_PROTOCOL)
 
 if __name__ == "__main__":
     sys.exit(main())
