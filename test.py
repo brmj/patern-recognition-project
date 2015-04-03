@@ -21,6 +21,7 @@ def main(argv=None):
 
         #the following is a placeholder until I am sure we have propper analysis tools for evaluating our results if we preserve files.
         symbs = SymbolData.allSymbols(exprs)
+        symbs = SymbolData.normalize(symbs, 99)
         f = Features.features(symbs)
         if (pca != None):
             f = pca.transform(f)

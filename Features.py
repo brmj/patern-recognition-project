@@ -3,7 +3,6 @@ import numpy as NP
 from skimage.morphology import disk
 from skimage.filters import rank
 from sklearn import preprocessing
-from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 
 # This is a skeleton of a file that will contain functions for various features.
@@ -52,7 +51,7 @@ def showImg(symbol):
     plt.show()
     
 # Get the features from a symbol
-def symbolFeatures(symbol, n_pca = None):
+def symbolFeatures(symbol):
     f = NP.array([])
     
     #Call feature functions here like so:
@@ -61,11 +60,11 @@ def symbolFeatures(symbol, n_pca = None):
     f = NP.append(f,xvar(symbol))
     f = NP.append(f,yvar(symbol))
 
-    '''
+    
     I = getImg(symbol)
     fkiFeat = getFKIfeatures(I)
     fki = getMeanStd(fkiFeat)
-    f = NP.append(f,fki) '''
+    f = NP.append(f,fki)
     
     #the minimum, basic scaling needed for many classifiers to work corectly.
     f_scaled = preprocessing.scale(f)

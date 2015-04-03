@@ -36,6 +36,7 @@ def train(model, training, keys= None, pca_num=None):
         model = OneNN()
     elif model == "rf":
         model = makeRF()
+    training = SymbolData.normalize(training, 99)
     f = Features.features(training)
     pca = None
     if (pca_num != None):
