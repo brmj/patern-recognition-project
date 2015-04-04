@@ -1,51 +1,68 @@
 import numpy as NP
 #import SymbolData
 from skimage.morphology import disk
-from skimage.filters import rank
+from skimage.filter import rank
 from sklearn import preprocessing
 import matplotlib.pyplot as plt
+from PIL import Image, ImageDraw
+import pickle
 
 # This is a skeleton of a file that will contain functions for various features.
 
 def features(symbols):
     return list(map ( (lambda symbol: symbolFeatures(symbol)), symbols))
 
-
-
 # Linear Interpolation
-def interp( x12, y12, t):
-    x = x12[0] * (1- t) + x12[1] * t
-    y = y12[0] * (1 -t) + y12[1] * t
-    return (x, y)
+#def interp( x12, y12, t):
+#    x = x12[0] * (1- t) + x12[1] * t
+#    y = y12[0] * (1 -t) + y12[1] * t
+#    return (x, y)
 
 # Create an image from a symbol
+#def getImg(symbol):
+#       xs = NP.array([])
+#       ys = NP.array([])
+#
+#       for i in range(len(symbol.strokes)):
+#           for j in range(len(symbol.strokes[i].xs)-1):
+#               for t in NP.linspace(0,1,30):
+#                   x,y = interp(symbol.strokes[i].xs[j:j+2],symbol.strokes[i].ys[j:j+2],t)
+#                   xs = NP.append(xs,x)
+#                   ys = NP.append(ys,y)
+#       I = NP.zeros((round(max(symbol.ys()))+1,round(max(symbol.xs()))+1))
+#
+##       assert(len(xs)==len(ys))
+#       for i in range(len(xs)):
+#           I[max(symbol.ys())-round(ys[i])][round(xs[i])] = 1
+#
+#       I = rank.mean(I, selem=disk(1))
+#       
+#       for i in range(I.shape[0]):
+#           for j in range(I.shape[1]):
+#               if(I[i][j]>0.5):
+#                   I[i][j]=1
+#       print("getimg: ", i, " ", j)
+#       return I
+
 def getImg(symbol):
-       xs = NP.array([])
-       ys = NP.array([])
-
-       for i in range(len(symbol.strokes)):
-           for j in range(len(symbol.strokes[i].xs)-1):
-               for t in NP.linspace(0,1,30):
-                   x,y = interp(symbol.strokes[i].xs[j:j+2],symbol.strokes[i].ys[j:j+2],t)
-                   xs = NP.append(xs,x)
-                   ys = NP.append(ys,y)
-       I = NP.zeros((max(symbol.ys())+1,max(symbol.xs())+1))
-
-       for i in range(len(xs)):
-           I[max(symbol.ys())-int(ys[i])][int(xs[i])] = 1
-
-       I = rank.mean(I, selem=disk(1))
-       
-       for i in range(I.shape[0]):
-           for j in range(I.shape[1]):
-               if(I[i][j]>0.5):
-                   I[i][j]=1
-       return I
+    I = Image.new("L",(round(max(symbol.xs()))+1,round(max(symbol.ys()))+1))
+    for stroke in symbol.strokes:
+        p = stroke.asPoints()
+        draw = ImageDraw.Draw(I)
+        draw.line(p,fill=255)  
+    img = NP.asarray(list(I.getdata()))
+    img = NP.reshape(img,(I.size[1],I.size[0]))
+    img = img/img.max()
+    img = rank.mean(img, selem=disk(1))
+    img = img/img.max()
+    img[img>=0.5] = 1
+    img[img<0.5] = 0
+    return(img)
 
 # Show image for the symbol
 def showImg(symbol):
     plt.figure()
-    I = getImg(symbol)
+    I = NP.flipud(getImg(symbol))
     plt.imshow(I)
     plt.gray()
     plt.show()
@@ -54,17 +71,18 @@ def showImg(symbol):
 def symbolFeatures(symbol):
     f = NP.array([])
     
-    #Call feature functions here like so:
-    f = NP.append(f,xmean(symbol))
-    f = NP.append(f,ymean(symbol))
-    f = NP.append(f,xvar(symbol))
-    f = NP.append(f,yvar(symbol))
+#    #Call feature functions here like so:
+#    f = NP.append(f,xmean(symbol))
+#    f = NP.append(f,ymean(symbol))
+#    f = NP.append(f,xvar(symbol))
+#    f = NP.append(f,yvar(symbol))
 
     
     I = getImg(symbol)
     fkiFeat = getFKIfeatures(I)
     fki = getMeanStd(fkiFeat)
     f = NP.append(f,fki)
+#    f = NP.append(f,fkiFeat)    
     
     #the minimum, basic scaling needed for many classifiers to work corectly.
     f_scaled = preprocessing.scale(f)
@@ -102,8 +120,9 @@ def getFKIfeatures(I):
                     c4=y    # position of the upper contour in the column
                 if(y>c5):
                     c5=y    # position of the lower contour in the column
-            if(y>1 & I[y-1][x]!= I[y-2][x]):
-                c8+=1       # Number of black-white transitions in the column
+            if(y>1):
+                if(I[y-1][x]!= I[y-2][x]):
+                    c8+=1       # Number of black-white transitions in the column
         
         c2 /= H
         c3 /= H**2
@@ -138,4 +157,12 @@ def getMeanStd(f):
 #def getRWTHfeatures(I,w):
 #    [W,H] = I.shape
 #    for i in range(W):
-        
+
+def pickleFeatures(feat, filename):
+    with open(filename, 'wb') as f:
+        pickle.dump(feat, f, pickle.HIGHEST_PROTOCOL)
+        #note that this may cause problems if you try to unpickle with an older version.
+
+def unpickleFeatures(filename):
+    with open(filename, 'rb') as f:
+        return pickle.load(f)

@@ -6,20 +6,27 @@ Created on Fri Mar 27 19:26:05 2015
 """
 import SymbolData
 import Features
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
+#from PIL import Image, ImageDraw
 
-      
-symbols = SymbolData.unpickleSymbols("train.dat")
+exprs , classes= SymbolData.unpickleSymbols("test.dat")
+symbols = SymbolData.allSymbols(exprs)
 scale = 99
-symbols = Features.normalize(symbols,scale)
-symbols[0].plot()
-plt.grid('on')
+symbols = SymbolData.normalize(symbols,scale)
 
-I = Features.getImg(symbols[0])
-    
-plt.imshow(I)
-plt.gray()
-plt.show()
+#i=0
+#for symbol in symbols:
+#    print(i)
+#    I = Features.getImg(symbol)
+#    i+=1
 
-f = Features.getFKIfeatures(I)
-fki = Features.getMeanStd(f)
+#I = Image.new("L",(round(max(symbol.xs()))+1,round(max(symbol.ys()))+1))
+#for stroke in symbol.strokes:
+#    p = stroke.asPoints()
+#    draw = ImageDraw.Draw(I)
+#    draw.line(p,fill=255)  
+#img = NP.asarray(list(I.getdata()))
+#img = NP.reshape(img,(I.size[1],I.size[0]))
+
+f = Features.features(symbols)
+Features.pickleFeatures(f,"FKIFeat_Train.dat")
