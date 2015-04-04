@@ -9,7 +9,7 @@ import Features
 #import matplotlib.pyplot as plt
 #from PIL import Image, ImageDraw
 
-exprs , classes= SymbolData.unpickleSymbols("test.dat")
+exprs , classes= SymbolData.unpickleSymbols("train.dat")
 symbols = SymbolData.allSymbols(exprs)
 scale = 99
 symbols = SymbolData.normalize(symbols,scale)
@@ -28,5 +28,11 @@ symbols = SymbolData.normalize(symbols,scale)
 #img = NP.asarray(list(I.getdata()))
 #img = NP.reshape(img,(I.size[1],I.size[0]))
 
+### Save FKI Testing features
+#f = Features.features(symbols)
+#Features.pickleFeatures(f,"FKIFeat_Test.dat")
+
+### Save FKI Training features
 f = Features.features(symbols)
 Features.pickleFeatures(f,"FKIFeat_Train.dat")
+#feat = Features.unpickleFeatures("FKIFeat_Train.dat")

@@ -1,7 +1,8 @@
 import numpy as NP
 #import SymbolData
-from skimage.morphology import disk
+from skimage.morphology import disk, binary_closing
 from skimage.filter import rank
+from skimage.transform import rescale
 from sklearn import preprocessing
 import matplotlib.pyplot as plt
 from PIL import Image, ImageDraw
@@ -54,7 +55,10 @@ def getImg(symbol):
     img = NP.reshape(img,(I.size[1],I.size[0]))
     img = img/img.max()
     img = rank.mean(img, selem=disk(1))
+    img = binary_closing(img,selem=disk(1))
     img = img/img.max()
+    scale = max(img.shape)/img.shape[0]
+    img = rescale(img,scale)
     img[img>=0.5] = 1
     img[img<0.5] = 0
     return(img)
@@ -71,18 +75,18 @@ def showImg(symbol):
 def symbolFeatures(symbol):
     f = NP.array([])
     
-#    #Call feature functions here like so:
-#    f = NP.append(f,xmean(symbol))
-#    f = NP.append(f,ymean(symbol))
-#    f = NP.append(f,xvar(symbol))
-#    f = NP.append(f,yvar(symbol))
-
+    #Call feature functions here like so:
+    f = NP.append(f,xmean(symbol))
+    f = NP.append(f,ymean(symbol))
+    f = NP.append(f,xvar(symbol))
+    f = NP.append(f,yvar(symbol))
+    f = NP.append(f,aspratio(symbol))
+    f = NP.append(f,numstrokes(symbol))    
     
     I = getImg(symbol)
     fkiFeat = getFKIfeatures(I)
     fki = getMeanStd(fkiFeat)
     f = NP.append(f,fki)
-#    f = NP.append(f,fkiFeat)    
     
     #the minimum, basic scaling needed for many classifiers to work corectly.
     f_scaled = preprocessing.scale(f)
@@ -102,6 +106,16 @@ def xvar(symbol):
 
 def yvar(symbol):
     return [NP.var(symbol.ys())]
+
+def aspratio(symbol):
+    ar = (symbol.ymax()-symbol.ymin())/(symbol.xmax()-symbol.xmin())
+    return [ar]
+    
+def numstrokes(symbol):
+    return[len(symbol.strokes)]
+
+#def eigenVec(symbol):
+    
 
 ## FKI Features 
 def getFKIfeatures(I):
