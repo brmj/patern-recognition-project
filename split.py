@@ -2,7 +2,7 @@ import sys
 import SymbolData
 
 
-usage = "Usage: $ python split.py (file.inkml | directory) lgdir trainingFilename [testingFilename [trainingPerc]]"
+usage = "Usage: $ python split.py (file.inkml | inkmlDirectory) lgdir trainingFilename [testingFilename [trainingPerc]]"
 
 def main(argv=None):
     if argv is None:

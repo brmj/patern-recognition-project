@@ -4,6 +4,7 @@ import numpy as NP
 import matplotlib.pyplot as PLT
 from pylab import *
 import os
+import shutil
 import re
 import random
 import pickle
@@ -194,7 +195,8 @@ class Expression:
             
             for relation in self.relations:
                 f.write(relation)
-    
+
+defaultClasses = ['!', '(', ')', '+', '-', '.', '/', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '=', 'A', 'B', 'C', 'COMMA', 'E', 'F', 'G', 'H', 'I', 'L', 'M', 'N', 'P', 'R', 'S', 'T', 'V', 'X', 'Y', '[', '\\Delta', '\\alpha', '\\beta', '\\cos', '\\div', '\\exists', '\\forall', '\\gamma', '\\geq', '\\gt', '\\in', '\\infty', '\\int', '\\lambda', '\\ldots', '\\leq', '\\lim', '\\log', '\\lt', '\\mu', '\\neq', '\\phi', '\\pi', '\\pm', '\\prime', '\\rightarrow', '\\sigma', '\\sin', '\\sqrt', '\\sum', '\\tan', '\\theta', '\\times', '\\{', '\\}', ']', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '|']
 
 # This stuff is used for reading strokes and symbols from files.
 
@@ -247,15 +249,19 @@ def readFile(filename, warn=False):
             print("warning: unparsable file.")
         return []
 
+def fnametolg(filename, lgdir):
+    fdir, fname = os.path.split(filename)
+    name, ext = os.path.splitext(fname)
+    return os.path.join(lgdir, (name + ".lg"))
+
+
 # this returns an expression class rather than just a list of symbols.
 def readInkml(filename, lgdir, warn=False):
     symbols = readFile(filename, warn)
     rdir, filenm = os.path.split(filename)
     name, ext = os.path.splitext(filenm)
-    if lgdir[len(lgdir) -1] == '/':
-        lgfile = lgdir + '/' + name + '.lg'
-    else:
-        lgfile = lgdir + name + '.lg'
+    lgfile = fnametolg(filename, lgdir)
+
 
     return Expression(name, symbols, readLG(lgfile))
     
@@ -272,7 +278,6 @@ def readLG(filename):
 
     return relations        
 
-    
 
 def filenames(filename):
     inkmlre = re.compile('\.inkml$')
@@ -285,6 +290,10 @@ def filenames(filename):
     elif(inkmlre.search(filename) != None):
         fnames.append(filename)
     return fnames
+
+def filepairs(filename, lgdir):
+    fnames = filenames(filename)
+    return map ((lambda f: (f, fnametolg(f, lgdir))), fnames)
 
 def readDirectory(filename, warn=False):
     fnames = filenames(filename)
@@ -352,6 +361,27 @@ def splitExpressions(expressions, trainPerc):
 
     return( (training, testing))
 
+def splitFiles(inkmldir, lgdir, traindir, testdir, trainlg, testlg, trainPerc = (2.0 / 3.0)):
+
+    training = []
+    testing = []
+    fls = list(filepairs(inkmldir, lgdir))
+    random.shuffle(fls)
+    trainNum = int(round (len(fls) * trainPerc))
+    training = training + fls[:trainNum]
+    testing = testing + fls[trainNum:]
+
+    for fpair in training:
+        shutil.copy(fpair[0], traindir)
+        shutil.copy(fpair[1], trainlg)
+
+    for fpair in testing:
+        shutil.copy(fpair[0], testdir)
+        shutil.copy(fpair[1], testlg)
+    #fancy stuff to ensure a good split goes here.
+    #will try and add that today.
+
+    return( (training, testing))
 
     
 def pickleSymbols(symbols, filename):

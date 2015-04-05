@@ -1,26 +1,33 @@
 import sys
 import pickle
+import os
 #from sklearn.externals import joblib
 import SymbolData
 import Classification
 import Features
 from sklearn.metrics import accuracy_score
 
-usage = "Usage: $ python test.py testingFilename stateFilename outdir"
+usage = "Usage: $ python test.py stateFilename outdir (testFile.dat | inkmldir lgdir)"
 
 def main(argv=None):
     if argv is None:
         argv = sys.argv[1:] #dirty trick to make this convenient in the interpreter.
-    if (len (argv) != 3): 
+    if (len (argv) < 3 or len (argv) > 4): 
         print(("bad number of args:" , len(argv)))
         print(usage)
     else:
-        with open(argv[0], 'rb') as f:
-            exprs, keys = pickle.load(f)
 
+        if (len( argv) == 3):  
+        
+            with open(argv[0], 'rb') as f:
+                exprs, ks = pickle.load(f)
+        else:
+             exprs = SymbolData.readInkmlDirectory(argv[2], argv[3])
+
+        
         #model, pca = joblib.load(argv[1]) 
-        with open(argv[1], 'rb') as f:
-            model, pca =  pickle.load(f)
+        with open(argv[0], 'rb') as f:
+            model, pca, keys =  pickle.load(f)
 
 
         #the following is a placeholder until I am sure we have propper analysis tools for evaluating our results if we preserve files.
@@ -47,7 +54,7 @@ def main(argv=None):
             f = (lambda p: keys[p])
             #    expr.classes = map (f, preds[i])
 
-            expr.writeLG(argv[2],clss =  map (f, preds[i]) )
+            expr.writeLG(argv[1],clss =  map (f, preds[i]) )
             i = i + 1
             
 if __name__ == "__main__":
