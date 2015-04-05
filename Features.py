@@ -78,15 +78,16 @@ def symbolFeatures(symbol):
     #Call feature functions here like so:
     f = NP.append(f,xmean(symbol))
     f = NP.append(f,ymean(symbol))
-    f = NP.append(f,xvar(symbol))
-    f = NP.append(f,yvar(symbol))
-    f = NP.append(f,aspratio(symbol))
+#    f = NP.append(f,xvar(symbol))
+#    f = NP.append(f,yvar(symbol))
+    f = NP.append(f,getStatFeatures(symbol))
     f = NP.append(f,numstrokes(symbol))    
     
-    I = getImg(symbol)
-    fkiFeat = getFKIfeatures(I)
-    fki = getMeanStd(fkiFeat)
-    f = NP.append(f,fki)
+#    I = getImg(symbol)
+#    fkiFeat = getFKIfeatures(I)
+#    fki = getMeanStd(fkiFeat)
+#    f = NP.append(f,fki)
+#    f = NP.append(f,aspratio(I))
     
     #the minimum, basic scaling needed for many classifiers to work corectly.
     f_scaled = preprocessing.scale(f)
@@ -101,22 +102,38 @@ def xmean(symbol):
 def ymean(symbol):
     return [NP.mean(symbol.ys())]
 
-def xvar(symbol):
-    return [NP.var(symbol.xs())]
+#def xvar(symbol):
+#    return [NP.var(symbol.xs())]
+#
+#def yvar(symbol):
+#    return [NP.var(symbol.ys())]
 
-def yvar(symbol):
-    return [NP.var(symbol.ys())]
-
-def aspratio(symbol):
-    ar = (symbol.ymax()-symbol.ymin())/(symbol.xmax()-symbol.xmin())
-    return [ar]
+def aspratio(I):
+    return [I.shape[0]/I.shape[1]]
     
 def numstrokes(symbol):
     return[len(symbol.strokes)]
 
-#def eigenVec(symbol):
+def getStatFeatures(symbol):
+    pts = NP.asarray(symbol.points()).T
+    f = NP.array([])
     
-
+    if pts.shape[1] > 1:
+        cov = NP.cov(pts)
+        eig = NP.linalg.eig(cov)
+        ind = NP.argsort(eig[0])
+        eigVal = eig[0][ind]
+        eigVec = eig[1].T
+        eigVecSort = eigVec[ind]
+        f = NP.append(f,cov[0])
+        f = NP.append(f,cov[1][1])
+        f = NP.append(f,eigVal)
+        f = NP.append(f,eigVecSort)
+    else:
+        f = NP.zeros((9))
+    
+    return f
+    
 ## FKI Features 
 def getFKIfeatures(I):
     [H,W] = I.shape

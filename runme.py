@@ -6,8 +6,29 @@ Created on Fri Mar 27 19:26:05 2015
 """
 import SymbolData
 import Features
-#import matplotlib.pyplot as plt
+#import numpy as NP
+import matplotlib.pyplot as plt
 #from PIL import Image, ImageDraw
+
+#def getStatFeatures(symbol):
+#    pts = NP.asarray(symbol[0].points()).T
+#    f = NP.array([])
+#    
+#    if pts.shape[1] > 1:
+#        cov = NP.cov(pts)
+#        eig = NP.linalg.eig(cov)
+#        ind = NP.argsort(eig[0])
+#        eigVal = eig[0][ind]
+#        eigVec = eig[1].T
+#        eigVecSort = eigVec[ind]
+#        f = NP.append(f,cov[0])
+#        f = NP.append(f,cov[1][1])
+#        f = NP.append(f,eigVal)
+#        f = NP.append(f,eigVecSort)
+#    else:
+#        f = NP.zeros((9))
+#    
+#    return f
 
 exprs , classes= SymbolData.unpickleSymbols("train.dat")
 symbols = SymbolData.allSymbols(exprs)
@@ -20,19 +41,15 @@ symbols = SymbolData.normalize(symbols,scale)
 #    I = Features.getImg(symbol)
 #    i+=1
 
-#I = Image.new("L",(round(max(symbol.xs()))+1,round(max(symbol.ys()))+1))
-#for stroke in symbol.strokes:
-#    p = stroke.asPoints()
-#    draw = ImageDraw.Draw(I)
-#    draw.line(p,fill=255)  
-#img = NP.asarray(list(I.getdata()))
-#img = NP.reshape(img,(I.size[1],I.size[0]))
-
 ### Save FKI Testing features
 #f = Features.features(symbols)
 #Features.pickleFeatures(f,"FKIFeat_Test.dat")
 
 ### Save FKI Training features
-f = Features.features(symbols)
-Features.pickleFeatures(f,"FKIFeat_Train.dat")
+#f = Features.features(symbols)
+#Features.pickleFeatures(f,"FKIFeat_Train.dat")
 #feat = Features.unpickleFeatures("FKIFeat_Train.dat")
+
+### Save Statisticla features
+f = Features.features(symbols)
+Features.pickleFeatures(f,"StatFeat_Test.dat")
