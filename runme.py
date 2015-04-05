@@ -30,7 +30,7 @@ import matplotlib.pyplot as plt
 #    
 #    return f
 
-exprs , classes= SymbolData.unpickleSymbols("train.dat")
+exprs , classes= SymbolData.unpickleSymbols("test.dat")
 symbols = SymbolData.allSymbols(exprs)
 scale = 99
 symbols = SymbolData.normalize(symbols,scale)
@@ -41,11 +41,11 @@ symbols = SymbolData.normalize(symbols,scale)
 #    I = Features.features(symbol)
 #    i+=1
 
-#i=0
-#for symbol in symbols:
-#    print(i)
-#    I = Features.symbolFeatures(symbol)
-#    i+=1
+i=0
+for symbol in symbols:
+    print(i)
+    I = Features.symbolFeatures(symbol)
+    i+=1
 
 ### Save FKI Testing features
 #f = Features.features(symbols)
@@ -57,7 +57,7 @@ symbols = SymbolData.normalize(symbols,scale)
 #feat = Features.unpickleFeatures("FKIFeat_Train.dat")
 
 ### Save RWTH features
-f = Features.features(symbols[:1000])
+f = Features.features(symbols)
 Features.pickleFeatures(f,"RWTHFeat_Train.dat")
 
 ### Save Statisticla features
