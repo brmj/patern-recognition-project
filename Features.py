@@ -2,7 +2,7 @@ import numpy as NP
 #import SymbolData
 from skimage.morphology import disk, binary_closing
 from skimage.filter import rank
-from skimage.transform import rescale
+#from skimage.transform import rescale
 from sklearn import preprocessing
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
@@ -58,9 +58,9 @@ def getImg(symbol):
     img = rank.mean(img, selem=disk(1))
     img = binary_closing(img,selem=disk(1))
     img = img/img.max()
-    scale = max(img.shape)/img.shape[0]
-    if(scale!=1):
-        img = rescale(img,scale)
+#    scale = max(img.shape)/img.shape[0]
+#    if(scale!=1):
+#        img = rescale(img,scale)
     img[img>=0.5] = 1
     img[img<0.5] = 0
     return(img)
@@ -78,21 +78,21 @@ def symbolFeatures(symbol):
     f = NP.array([])
     
     #Call feature functions here like so:
-#    f = NP.append(f,xmean(symbol))
-#    f = NP.append(f,ymean(symbol))
-##    f = NP.append(f,xvar(symbol))
-##    f = NP.append(f,yvar(symbol))
-#    f = NP.append(f,getStatFeatures(symbol))
-#    f = NP.append(f,numstrokes(symbol))    
+    f = NP.append(f,xmean(symbol))
+    f = NP.append(f,ymean(symbol))
+    f = NP.append(f,numstrokes(symbol))    
+    f = NP.append(f,aspratio(symbol))
+#    f = NP.append(f,xvar(symbol))
+#    f = NP.append(f,yvar(symbol))
+    f = NP.append(f,getStatFeatures(symbol))
     
     I = getImg(symbol)
-#    fkiFeat = getFKIfeatures(I)
-#    fki = getMeanStd(fkiFeat)
-#    f = NP.append(f,fki)
-    RWTHFeat = getRWTHfeatures(I,5,30)
-    RWTH = getMeanStd(RWTHFeat)
-    f = NP.append(f,RWTH)
-#    f = NP.append(f,aspratio(I))
+    fkiFeat = getFKIfeatures(I)
+    fki = getMeanStd(fkiFeat)
+    f = NP.append(f,fki)
+#    RWTHFeat = getRWTHfeatures(I,5,30)
+#    RWTH = getMeanStd(RWTHFeat)
+#    f = NP.append(f,RWTH)
     
     #the minimum, basic scaling needed for many classifiers to work corectly.
     f_scaled = preprocessing.scale(f)
@@ -113,8 +113,8 @@ def ymean(symbol):
 #def yvar(symbol):
 #    return [NP.var(symbol.ys())]
 
-def aspratio(I):
-    return [I.shape[0]/I.shape[1]]
+def aspratio(symbol):
+    return [(symbol.ymax()-symbol.ymin()+1)/(symbol.xmax()-symbol.xmin()+1)]
     
 def numstrokes(symbol):
     return[len(symbol.strokes)]
@@ -186,11 +186,15 @@ def getFKIfeatures(I):
 ## RWTH Features
 def getRWTHfeatures(I,w,dim):
     [H,W] = I.shape
+    if(H%2==1):     #make the height even
+        I=NP.append(I,NP.zeros((1,W)), axis=0)
+        H+=1
+    
     if(W<w):        #prevent error for very small width images
         w = W
 
-    if(W<2 and H<30):   #if the image is less than the feature dimentsion
-        f = NP.zeros((w*H,30))
+    if(w*H<dim):   #if the image patch is less than the feature dimentsion
+        f = NP.zeros((W-w+1,30))
     else:
         win = NP.zeros((W-w+1,H*w))
 
