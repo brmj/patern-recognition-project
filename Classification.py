@@ -38,7 +38,7 @@ def makeET():
     #play with the options once we have a reasonable set of features to experiment with.
     return sklearn.ensemble.ExtraTreesClassifier()
         
-def train(model, training, keys= None, pca_num=None):
+def train(model, training, keys, pca_num=None):
     if model == "1nn":
         model = OneNN()
     elif model == "rf":
@@ -59,17 +59,20 @@ def classifyExpressions(expressions, keys, model, pca, renormalize=True, showAcc
     # with side effects and returnning stuff to evaluate the results.
     # Bad style. Sorry.
 
-    cors = NP.array([])
-    preds = NP.array([])
+    cors = list([])
+    preds = list([])
     
     for expr in expressions:
         correct, predicted =  classifyExpression(expr, keys, model, pca, renormalize)
-        cors = NP.append(cors, correct)
-        preds= NP.append(preds, predicted)
+        assert (len(correct) == len(predicted))
+        cors = cors + [correct]
+        preds = preds + [predicted]
         #print (correct, " -> ", predicted)
-    
+
+        
     if showAcc:
-        print( "Accuracy on testing set : ", accuracy_score(cors, preds))
+        
+        print( "Accuracy on testing set : ", accuracy_score(NP.concatenate(cors), NP.concatenate(preds)))
     return (cors, preds)
     
 def classifyExpression(expression, keys, model, pca, renormalize=True):
@@ -83,7 +86,9 @@ def classifyExpression(expression, keys, model, pca, renormalize=True):
     if (pca != None):
         f = pca.transform(f)
     pred = model.predict(f)
-    expression.classes = map ((lambda p: keys.index(p)), pred)
+    assert (max(pred) < len(keys))
+    f = (lambda p: keys[p])
+    expression.classes = map (f, pred)
     return (NP.array(SymbolData.classNumbers(symbs, keys)), pred)
 
 """

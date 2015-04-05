@@ -16,7 +16,7 @@ def main(argv=None):
         print(usage)
     else:
         with open(argv[0], 'rb') as f:
-            exprs, classes = pickle.load(f)
+            exprs, keys = pickle.load(f)
 
         #model, pca = joblib.load(argv[1]) 
         with open(argv[1], 'rb') as f:
@@ -38,10 +38,17 @@ def main(argv=None):
 #        print( "Accuracy on testing set : ", accuracy_score(SymbolData.classNumbers(symbs, classes), pred))
 
         #code to write out results goes here.
-
-        results = Classification.classifyExpressions(exprs, classes, model, pca, showAcc = True)
+        print ("Classifying")
+        truths, preds = Classification.classifyExpressions(exprs, keys, model, pca, showAcc = True)
+        print ("Writing LG files.")
+        i = 0
         for expr in exprs:
-            expr.writeLG(argv[2])
+            #if (preds[i] != -1): 
+            f = (lambda p: keys[p])
+            #    expr.classes = map (f, preds[i])
 
+            expr.writeLG(argv[2],clss =  map (f, preds[i]) )
+            i = i + 1
+            
 if __name__ == "__main__":
     sys.exit(main())

@@ -15,7 +15,7 @@ def main(argv=None):
         print(("bad number of args:" , len(argv)))
         print (usage)
     else:
-        exprs, classes = SymbolData.unpickleSymbols(argv[0])
+        exprs, keys = SymbolData.unpickleSymbols(argv[0])
 
         if (argv[1] == "-nn" ):
             model = Classification.OneNN()
@@ -30,7 +30,8 @@ def main(argv=None):
                 #things will break in ways that are hard for me to test for if it isn't.
 
         symbs = SymbolData.allSymbols(exprs)
-        trained, pca = Classification.train(model, symbs, classes)
+        
+        trained, pca = Classification.train(model, symbs, keys)
 
         print ("Done training.")
         if False:
@@ -38,7 +39,7 @@ def main(argv=None):
             if (pca != None):
                 f = pca.transform(f)
             pred = model.predict(f)
-            print( "Accuracy on training set : ", accuracy_score(SymbolData.classNumbers(symbs, classes), pred))
+            print( "Accuracy on training set : ", accuracy_score(SymbolData.classNumbers(symbs, keys), pred))
 
 
         #joblib.dump((trained, pca), argv[2])    

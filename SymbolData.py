@@ -158,17 +158,32 @@ class Expression:
         self.classes = []
 
 
-    def writeLG (self, directory): #this _will_ probably break on windows style file paths.
+    def writeLG (self, directory, clss = None): #this _will_ probably break on windows style file paths.
         #Is there something cleaner from the libraries we can use?
         if directory[len(directory) -1] == '/':
             self.filename = directory + '/' + self.name + '.lg'
         else:
             self.filename = directory + self.name + '.lg'
+        if (clss == None):
+            print ("none clss")
+            assert (len (list(self.classes)) == len (list(self.symbols)))
+            self.clss = list(self.classes)
+        else:
+            self.clss = list(clss)
+            
+        self.symblines =  []
+        self.i = 0
 
-        assert (len (list(self.classes)) == len (list(self.symbols)))
-        #It appears python's map function is clever enough to impersonate haskell's "zipwith".
-        #Who would have thought? I'm impressed.
-        self.symblines = list(map ((lambda s, c: s.lgline(c) ) , self.symbols, self.classes))
+        #for c in (self.clss):
+        #    print (c)
+       # print (len(self.clss ), " ", len(list(self.symbols)))
+        #print (self.clss)
+        #for c in (self.clss):
+            #print ( c)
+        for symbol in self.symbols:
+           # print (self.i)
+            self.symblines.append(symbol.lgline(self.clss[self.i]))
+            self.i = self.i + 1
 
         with (open (self.filename, 'w')) as f:
             
