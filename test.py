@@ -1,5 +1,6 @@
 import sys
 import pickle
+#from sklearn.externals import joblib
 import SymbolData
 import Classification
 import Features
@@ -12,25 +13,35 @@ def main(argv=None):
         argv = sys.argv[1:] #dirty trick to make this convenient in the interpreter.
     if (len (argv) != 3): 
         print(("bad number of args:" , len(argv)))
+        print(usage)
     else:
         with open(argv[0], 'rb') as f:
             exprs, classes = pickle.load(f)
+
+        #model, pca = joblib.load(argv[1]) 
         with open(argv[1], 'rb') as f:
             model, pca =  pickle.load(f)
 
 
         #the following is a placeholder until I am sure we have propper analysis tools for evaluating our results if we preserve files.
-        symbs = SymbolData.allSymbols(exprs)
-        symbs = SymbolData.normalize(symbs, 99)
-        f = Features.features(symbs)
-        if (pca != None):
-            f = pca.transform(f)
-        pred = model.predict(f)
+#        symbs = SymbolData.allSymbols(exprs)
+#        print("Normalizing")
+#        symbs = SymbolData.normalize(symbs, 99)
+#        print("Calculating features.")
+#        f = Features.features(symbs)
+#        if (pca != None):
+#            print ("doing PCA")
+#            f = pca.transform(f)
+#        print ("Classifying.")
+#        pred = model.predict(f)
         
-        print( "Accuracy on testing set : ", accuracy_score(SymbolData.classNumbers(symbs, classes), pred))
+#        print( "Accuracy on testing set : ", accuracy_score(SymbolData.classNumbers(symbs, classes), pred))
 
         #code to write out results goes here.
-    
+
+        results = Classification.classifyExpressions(exprs, classes, model, pca, showAcc = True)
+        for expr in exprs:
+            expr.writeLG(argv[2])
 
 if __name__ == "__main__":
     sys.exit(main())

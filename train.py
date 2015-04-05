@@ -1,17 +1,19 @@
 import sys
 import pickle
+#from sklearn.externals import joblib
 import SymbolData
 import Classification
 import Features
 from sklearn.metrics import accuracy_score
 
-usage = "Usage: $ python train.py trainingFilename (-nn|-rf|modelFilename) outFilename"
+usage = "Usage: $ python train.py trainingFilename (-nn|-rf|-et|modelFilename) outFilename"
 
 def main(argv=None):
     if argv is None:
         argv = sys.argv[1:] #dirty trick to make this convenient in the interpreter.
     if (len (argv) != 3): 
         print(("bad number of args:" , len(argv)))
+        print (usage)
     else:
         exprs, classes = SymbolData.unpickleSymbols(argv[0])
 
@@ -19,6 +21,8 @@ def main(argv=None):
             model = Classification.OneNN()
         elif (argv[1] == "-rf" ):
             model = Classification.makeRF()
+        elif (argv[1] == "-et" ):
+            model = Classification.makeET()
         else:
             with open(argv[1], 'rb') as f:
                 model =  pickle.load(f)
@@ -29,13 +33,15 @@ def main(argv=None):
         trained, pca = Classification.train(model, symbs, classes)
 
         print ("Done training.")
-        if True:
+        if False:
             f = Features.features(symbs)
             if (pca != None):
                 f = pca.transform(f)
             pred = model.predict(f)
             print( "Accuracy on training set : ", accuracy_score(SymbolData.classNumbers(symbs, classes), pred))
 
+
+        #joblib.dump((trained, pca), argv[2])    
         with open(argv[2], 'wb') as f:
             pickle.dump((trained, pca), f, pickle.HIGHEST_PROTOCOL)
 

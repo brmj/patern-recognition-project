@@ -165,7 +165,7 @@ class Expression:
         else:
             self.filename = directory + self.name + '.lg'
 
-        assert (len (self.classes) == len (self.symbols))
+        assert (len (list(self.classes)) == len (list(self.symbols)))
         #It appears python's map function is clever enough to impersonate haskell's "zipwith".
         #Who would have thought? I'm impressed.
         self.symblines = list(map ((lambda s, c: s.lgline(c) ) , self.symbols, self.classes))
@@ -202,27 +202,35 @@ def readSymbol(root, tracegroup):
     truthAnnot = tracegroup.find(".//{http://www.w3.org/2003/InkML}annotation[@type='truth']")
     identAnnot = tracegroup.find(".//{http://www.w3.org/2003/InkML}annotationXML")    
     strokeElems = tracegroup.findall('.//{http://www.w3.org/2003/InkML}traceView')
+    assert( len(strokeElems) != 0)
     strokeNums = list(map( (lambda e: int(e.attrib['traceDataRef'])), strokeElems)) #ensure that all these are really ints if we have trouble.
     strokes = list(map( (lambda n: readStroke(root, n)), strokeNums))
     if (truthAnnot == None):
         return Symbol(strokes)
     else:
         truthText = doTruthSubs(truthAnnot.text)
-        return Symbol(strokes, correctClass=truthText, norm=True, ident=identAnnot.attrib['href'] )
+        if identAnnot == None:
+            #what do we even do with this?
+            #messing with lg files depends on it.
+            #for the momment, give it a bogus name and continue.
+            idnt = str(strokeNums).replace(' ', '_')
+        else:
+            idnt = identAnnot.attrib['href']
+        return Symbol(strokes, correctClass=truthText, norm=True, ident=idnt )
     
     
 def readFile(filename, warn=False):
-    try:
+    #try:
         print (filename)
         tree = ET.parse(filename)
         root = tree.getroot()
         tracegroups = root.findall('./*/{http://www.w3.org/2003/InkML}traceGroup')
         symbols = list(map((lambda t: readSymbol(root, t)), tracegroups))
         return symbols
-    except:
-        if warn:
-            print("warning: unparsable file.")
-        return []
+    #except:
+        #if warn:
+        #    print("warning: unparsable file.")
+        #return []
 
 # this returns an expression class rather than just a list of symbols.
 def readInkml(filename, lgdir, warn=False):
@@ -328,6 +336,7 @@ def splitExpressions(expressions, trainPerc):
     #will try and add that today.
 
     return( (training, testing))
+
 
     
 def pickleSymbols(symbols, filename):
