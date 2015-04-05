@@ -220,17 +220,17 @@ def readSymbol(root, tracegroup):
     
     
 def readFile(filename, warn=False):
-    #try:
+    try:
         print (filename)
         tree = ET.parse(filename)
         root = tree.getroot()
         tracegroups = root.findall('./*/{http://www.w3.org/2003/InkML}traceGroup')
         symbols = list(map((lambda t: readSymbol(root, t)), tracegroups))
         return symbols
-    #except:
-        #if warn:
-        #    print("warning: unparsable file.")
-        #return []
+    except:
+        if warn:
+            print("warning: unparsable file.")
+        return []
 
 # this returns an expression class rather than just a list of symbols.
 def readInkml(filename, lgdir, warn=False):
