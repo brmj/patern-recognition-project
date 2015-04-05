@@ -82,17 +82,17 @@ def symbolFeatures(symbol):
     f = NP.append(f,ymean(symbol))
     f = NP.append(f,numstrokes(symbol))    
     f = NP.append(f,aspratio(symbol))
-#    f = NP.append(f,xvar(symbol))
-#    f = NP.append(f,yvar(symbol))
+##    f = NP.append(f,xvar(symbol))
+##    f = NP.append(f,yvar(symbol))
     f = NP.append(f,getStatFeatures(symbol))
     
     I = getImg(symbol)
     fkiFeat = getFKIfeatures(I)
     fki = getMeanStd(fkiFeat)
     f = NP.append(f,fki)
-#    RWTHFeat = getRWTHfeatures(I,5,30)
-#    RWTH = getMeanStd(RWTHFeat)
-#    f = NP.append(f,RWTH)
+    RWTHFeat = getRWTHfeatures(I,3,20)
+    RWTH = getMeanStd(RWTHFeat)
+    f = NP.append(f,RWTH)
     
     #the minimum, basic scaling needed for many classifiers to work corectly.
     f_scaled = preprocessing.scale(f)
@@ -190,11 +190,13 @@ def getRWTHfeatures(I,w,dim):
         I=NP.append(I,NP.zeros((1,W)), axis=0)
         H+=1
     
-    if(W<w):        #prevent error for very small width images
-        w = W
-
-    if(w*H<dim):   #if the image patch is less than the feature dimentsion
-        f = NP.zeros((W-w+1,30))
+    if(W<dim+w):        #no of observations >= feature dimension
+#        w = W
+        I = NP.append(I,NP.zeros((H,dim+w-W)),axis=1)
+        W = dim+w
+        
+    if(w*H<dim):   #if the image patch is less than the feature dimension
+        f = NP.zeros((W-w+1,dim))
     else:
         win = NP.zeros((W-w+1,H*w))
 
@@ -216,11 +218,14 @@ def getRWTHfeatures(I,w,dim):
             else:
                 J[H/2-vCtr:,:] = I[0:H/2+vCtr,i:i+w]
             win[i] = NP.reshape(J,(1,J.size))
-
+#        w = NP.ones((win.shape))-win
         pca = PCA(n_components=dim)
-        pca.fit(win)
-        f = pca.components_
-        f = f.T
+        try:
+            pca.fit(win.T)
+            f = pca.components_
+            f = f.T
+        except:
+            f = NP.zeros((W-w+1,dim))
     return(f)
 
 

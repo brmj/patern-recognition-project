@@ -30,9 +30,9 @@ import matplotlib.pyplot as plt
 #    
 #    return f
 
-exprs , classes= SymbolData.unpickleSymbols("test.dat")
+exprs , classes= SymbolData.unpickleSymbols("train.dat")
 symbols = SymbolData.allSymbols(exprs)
-scale = 99
+scale = 49
 symbols = SymbolData.normalize(symbols,scale)
 
 #i=0
@@ -41,10 +41,15 @@ symbols = SymbolData.normalize(symbols,scale)
 #    I = Features.features(symbol)
 #    i+=1
 
+#7989,12287,12288,23126,23127 test.dat
+# 2467,3121,22071,22072,22731,46263 train.dat
+
+# Without vertical repositioning
+#6432,6433
 i=0
-for symbol in symbols:
-    print(i)
+for symbol in symbols[0:]:
     I = Features.symbolFeatures(symbol)
+    print(i)
     i+=1
 
 ### Save FKI Testing features
