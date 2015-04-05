@@ -4,6 +4,7 @@ from skimage.morphology import disk, binary_closing
 from skimage.filter import rank
 from skimage.transform import rescale
 from sklearn import preprocessing
+from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 from PIL import Image, ImageDraw
 import pickle
@@ -58,7 +59,8 @@ def getImg(symbol):
     img = binary_closing(img,selem=disk(1))
     img = img/img.max()
     scale = max(img.shape)/img.shape[0]
-    img = rescale(img,scale)
+    if(scale!=1):
+        img = rescale(img,scale)
     img[img>=0.5] = 1
     img[img<0.5] = 0
     return(img)
@@ -76,17 +78,20 @@ def symbolFeatures(symbol):
     f = NP.array([])
     
     #Call feature functions here like so:
-    f = NP.append(f,xmean(symbol))
-    f = NP.append(f,ymean(symbol))
-#    f = NP.append(f,xvar(symbol))
-#    f = NP.append(f,yvar(symbol))
-    f = NP.append(f,getStatFeatures(symbol))
-    f = NP.append(f,numstrokes(symbol))    
+#    f = NP.append(f,xmean(symbol))
+#    f = NP.append(f,ymean(symbol))
+##    f = NP.append(f,xvar(symbol))
+##    f = NP.append(f,yvar(symbol))
+#    f = NP.append(f,getStatFeatures(symbol))
+#    f = NP.append(f,numstrokes(symbol))    
     
-#    I = getImg(symbol)
+    I = getImg(symbol)
 #    fkiFeat = getFKIfeatures(I)
 #    fki = getMeanStd(fkiFeat)
 #    f = NP.append(f,fki)
+    RWTHFeat = getRWTHfeatures(I,5,30)
+    RWTH = getMeanStd(RWTHFeat)
+    f = NP.append(f,RWTH)
 #    f = NP.append(f,aspratio(I))
     
     #the minimum, basic scaling needed for many classifiers to work corectly.
@@ -177,22 +182,57 @@ def getFKIfeatures(I):
         f[x] = NP.array([c1,c2,c3,c4,c5,c6,c7,c8,c9])
     return f
 
-## Get Mean and Variance of FKI features
+
+## RWTH Features
+def getRWTHfeatures(I,w,dim):
+    [H,W] = I.shape
+    if(W<w):        #prevent error for very small width images
+        w = W
+
+    if(W<2 and H<30):   #if the image is less than the feature dimentsion
+        f = NP.zeros((w*H,30))
+    else:
+        win = NP.zeros((W-w+1,H*w))
+
+        for i in range(W-w+1):
+        #Vertical repositioning
+            y = NP.arange(H)
+            y = NP.reshape(y,(H,1))
+            y = NP.repeat(y,w,axis=1)
+            vCtr = NP.sum(NP.multiply(y,I[:,i:i+w]))
+            n = NP.count_nonzero(I[:,i:i+w])
+            if n==0:
+                vCtr = H/2
+            else:
+                vCtr /= n       # Vertical centeroid
+            vCtr = round(vCtr)
+            J = NP.zeros((H,w))
+            if (vCtr-H/2)>=0:
+                J[0:3*H/2-vCtr,:] = I[vCtr-H/2:,i:i+w]
+            else:
+                J[H/2-vCtr:,:] = I[0:H/2+vCtr,i:i+w]
+            win[i] = NP.reshape(J,(1,J.size))
+
+        pca = PCA(n_components=dim)
+        pca.fit(win)
+        f = pca.components_
+        f = f.T
+    return(f)
+
+
+## Get Mean and Variance of features
 def getMeanStd(f):
     mean = NP.mean(f, axis=0)
     std = NP.std(f, axis=0)
     feat = NP.append(mean,std)
     return(feat)
     
-## RWTH Features
-#def getRWTHfeatures(I,w):
-#    [W,H] = I.shape
-#    for i in range(W):
 
 def pickleFeatures(feat, filename):
     with open(filename, 'wb') as f:
         pickle.dump(feat, f, pickle.HIGHEST_PROTOCOL)
         #note that this may cause problems if you try to unpickle with an older version.
+
 
 def unpickleFeatures(filename):
     with open(filename, 'rb') as f:

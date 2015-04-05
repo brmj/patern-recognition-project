@@ -38,7 +38,13 @@ symbols = SymbolData.normalize(symbols,scale)
 #i=0
 #for symbol in symbols:
 #    print(i)
-#    I = Features.getImg(symbol)
+#    I = Features.features(symbol)
+#    i+=1
+
+#i=0
+#for symbol in symbols:
+#    print(i)
+#    I = Features.symbolFeatures(symbol)
 #    i+=1
 
 ### Save FKI Testing features
@@ -50,6 +56,10 @@ symbols = SymbolData.normalize(symbols,scale)
 #Features.pickleFeatures(f,"FKIFeat_Train.dat")
 #feat = Features.unpickleFeatures("FKIFeat_Train.dat")
 
+### Save RWTH features
+f = Features.features(symbols[:1000])
+Features.pickleFeatures(f,"RWTHFeat_Train.dat")
+
 ### Save Statisticla features
-f = Features.features(symbols)
-Features.pickleFeatures(f,"StatFeat_Test.dat")
+#f = Features.features(symbols)
+#Features.pickleFeatures(f,"StatFeat_Test.dat")
