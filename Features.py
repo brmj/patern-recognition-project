@@ -1,7 +1,7 @@
 import numpy as NP
 #import SymbolData
 from skimage.morphology import disk, binary_closing
-from skimage.filters import rank
+from skimage.filter import rank
 #from skimage.transform import rescale
 from sklearn import preprocessing
 from sklearn.decomposition import PCA
@@ -90,7 +90,7 @@ def symbolFeatures(symbol):
     fkiFeat = getFKIfeatures(I)
     fki = getMeanStd(fkiFeat)
     f = NP.append(f,fki)
-    RWTHFeat = getRWTHfeatures(I,3,20)
+    RWTHFeat = getRWTHfeatures(I,5,30)
     RWTH = getMeanStd(RWTHFeat)
     f = NP.append(f,RWTH)
     
@@ -306,3 +306,5 @@ def pickleFeatures(feat, filename):
 def unpickleFeatures(filename):
     with open(filename, 'rb') as f:
         return pickle.load(f)
+
+
