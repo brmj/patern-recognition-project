@@ -7,6 +7,8 @@ import os
 import shutil
 import re
 import random
+import numpy.random
+import scipy.stats
 import pickle
 import functools
 import itertools
@@ -238,7 +240,7 @@ def readSymbol(root, tracegroup):
     
 def readFile(filename, warn=False):
     try:
-        print (filename)
+        #print (filename)
         tree = ET.parse(filename)
         root = tree.getroot()
         tracegroups = root.findall('./*/{http://www.w3.org/2003/InkML}traceGroup')
@@ -293,7 +295,7 @@ def filenames(filename):
 
 def filepairs(filename, lgdir):
     fnames = filenames(filename)
-    return map ((lambda f: (f, fnametolg(f, lgdir))), fnames)
+    return list(map ((lambda f: (f, fnametolg(f, lgdir))), fnames))
 
 def readDirectory(filename, warn=False):
     fnames = filenames(filename)
@@ -308,7 +310,10 @@ def allSymbols(inkmls):
 
 def symbsByClass(symbols):
     classes = {}
+    for key in defaultClasses:
+        classes[key] = []
     for symbol in symbols:
+#        print (symbol)
         key = symbol.correctClass
         if (key not in classes):
             classes[key] = []
@@ -328,6 +333,76 @@ def classNumbers(symbols, keys=None):
         keys = list(symbsByClass(symbols).keys())
     keys.sort()
     return list(map((lambda symbol: keys.index(symbol.correctClass)), symbols))
+
+#The function this is being fed to normalizes, so it doesn't matter that
+#they don't sum to one.
+def symbsPDF (symbols, keys=defaultClasses):
+    if len(symbols) > 0:
+        if isinstance(symbols[0], Expression):
+            symbs = allSymbols(symbols)
+        else:
+            symbs = symbols
+    
+
+        tot = len (symbs)
+        clss = symbsByClass(symbs)
+        counts = NP.array([len(clss[key]) for key in keys])
+        return counts
+    else:
+        return numpy.zeros(len(keys))
+
+def cleverSplit(fpairs, perc = (2.0/3), maxit = 100000):
+    print ("reading files.")
+    symbs = symbsByFPair(fpairs)
+
+
+    print("constructing initial split")
+    train, test = randSplit(fpairs, perc)
+
+    print("getting initial PDFs")
+    trnsymbs = NP.concatenate([symbs[t] for t in train])
+    tstsymbs = NP.concatenate([symbs[t] for t in test])
+    
+    trainpdf = symbsPDF(trnsymbs)
+    testpdf = symbsPDF(tstsymbs)
+    #return (trainpdf, testpdf)
+    #assert(len(trainpdf) == len(testpdf))
+    print("getting initial entropy")
+    entropy = scipy.stats.entropy(trainpdf, testpdf)
+    print (entropy)
+    count = 0
+    while (count < maxit):
+        #print("looping")
+        i1 = random.randint(0, len(train)-1)
+        i2 = random.randint(0, len(test)-1)
+        
+        i1_p = symbsPDF(symbs[train[i1]])
+        i2_p = symbsPDF(symbs[train[i2]])
+        new_trainpdf = (trainpdf - i1_p) + i2_p
+        new_testpdf = (testpdf - i2_p) + i1_p
+
+        new_entropy = scipy.stats.entropy(new_trainpdf, new_testpdf)
+        if (new_entropy < entropy):
+            print(new_entropy , " < " , entropy, ": swaping")
+            testtmp = test[i2]
+            test[i2] = train[i1]
+            train[i1] = testtmp
+            entropy = new_entropy
+            trainpdf = new_trainpdf
+            testpdf = new_testpdf
+
+        count = count + 1
+
+    print("split entropy: ", entropy)
+    return (train, test)
+    
+
+def randSplit(items, perc = (2.0/3)):
+    my_items = list(items)
+    random.shuffle(my_items)
+    splitnum = int(round(len(my_items) * perc))
+    return (my_items[:splitnum], my_items[splitnum:])
+
 
 def splitSymbols(symbols, trainPerc):
     classes = symbsByClass(symbols)
@@ -361,15 +436,22 @@ def splitExpressions(expressions, trainPerc):
 
     return( (training, testing))
 
+def symbsByFPair(fls):
+    es = {}
+    for fp in fls:
+        #print fp 
+        es[fp] = readFile(fp[0])
+    return es
+
 def splitFiles(inkmldir, lgdir, traindir, testdir, trainlg, testlg, trainPerc = (2.0 / 3.0)):
 
-    training = []
-    testing = []
-    fls = list(filepairs(inkmldir, lgdir))
-    random.shuffle(fls)
-    trainNum = int(round (len(fls) * trainPerc))
-    training = training + fls[:trainNum]
-    testing = testing + fls[trainNum:]
+    training, testing = cleverSplit(list(filepairs(inkmldir, lgdir)))
+
+   # fls = list(filepairs(inkmldir, lgdir))
+   # random.shuffle(fls)
+   # trainNum = int(round (len(fls) * trainPerc))
+   # training = training + fls[:trainNum]
+   # testing = testing + fls[trainNum:]
 
     for fpair in training:
         shutil.copy(fpair[0], traindir)
