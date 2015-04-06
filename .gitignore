@@ -54,3 +54,13 @@ docs/_build/
 target/
 out.mdl
 *.mdl
+
+inkml/
+lgdir/
+out_dat/
+RFLg_all/
+RFLgOut/
+testing/
+testingLg/
+training/
+trainingLg/

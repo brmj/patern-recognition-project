@@ -32,7 +32,7 @@ import matplotlib.pyplot as plt
 
 exprs , classes= SymbolData.unpickleSymbols("train.dat")
 symbols = SymbolData.allSymbols(exprs)
-scale = 49
+scale = 99
 symbols = SymbolData.normalize(symbols,scale)
 
 #i=0
