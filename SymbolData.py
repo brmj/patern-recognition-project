@@ -234,7 +234,7 @@ def readSymbol(root, tracegroup):
             #for the momment, give it a bogus name and continue.
             idnt = str(strokeNums).replace(' ', '_')
         else:
-            idnt = identAnnot.attrib['href']
+            idnt = identAnnot.attrib['href'].replace(',', 'COMMA')
         return Symbol(strokes, correctClass=truthText, norm=True, ident=idnt )
     
     
