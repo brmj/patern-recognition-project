@@ -54,10 +54,12 @@ def getImg(symbol):
         draw.line(p,fill=255)  
     img = NP.asarray(list(I.getdata()))
     img = NP.reshape(img,(I.size[1],I.size[0]))
-    img = img/img.max()
-    img = rank.mean(img, selem=disk(1))
-    img = binary_closing(img,selem=disk(1))
-    img = img/img.max()
+    if(img.max()>0):
+        img = img/img.max()
+    if(min(img.shape)>2):
+        img = rank.mean(img, selem=disk(1))
+        img = binary_closing(img,selem=disk(1))
+        img = img/img.max()
 #    scale = max(img.shape)/img.shape[0]
 #    if(scale!=1):
 #        img = rescale(img,scale)
