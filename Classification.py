@@ -32,7 +32,7 @@ class OneNN:
 
 def makeRF():
     #play with the options once we have a reasonable set of features to experiment with.
-    return sklearn.ensemble.RandomForestClassifier(n_jobs = -1)
+    return sklearn.ensemble.RandomForestClassifier(n_estimators=20, n_jobs = -1, verbose=1)
 
 def makeET():
     #play with the options once we have a reasonable set of features to experiment with.
@@ -61,12 +61,16 @@ def classifyExpressions(expressions, keys, model, pca, renormalize=True, showAcc
 
     cors = list([])
     preds = list([])
+    tot = len(expressions)
+    i = 0
     
     for expr in expressions:
         correct, predicted =  classifyExpression(expr, keys, model, pca, renormalize)
         assert (len(correct) == len(predicted))
         cors = cors + [correct]
         preds = preds + [predicted]
+        print(i, "/",tot)
+        i+=1
         #print (correct, " -> ", predicted)
 
         
