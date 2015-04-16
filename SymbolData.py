@@ -161,10 +161,8 @@ class Expression:
         self.classes = []
 
 
-    def writeLG (self, directory, clss = None): #this _will_ probably break on windows style file paths.
-        #Is there something cleaner from the libraries we can use?
-        if directory[len(directory) -1] == '/':
-            self.filename = directory + '/' + self.name + '.lg'
+    def writeLG (self, directory, clss = None):
+        self.filename = os.path.join(directory, (self.name + '.lg'))
         else:
             self.filename = directory + self.name + '.lg'
         if (clss == None):
@@ -232,7 +230,7 @@ def readSymbol(root, tracegroup):
             #what do we even do with this?
             #messing with lg files depends on it.
             #for the momment, give it a bogus name and continue.
-        idnt = str(strokeNums).replace(' ', '_')
+        idnt = str(strokeNums).replace(', ', '_')
     else:
         idnt = identAnnot.attrib['href'].replace(',', 'COMMA')
     return Symbol(strokes, correctClass=truthText, norm=True, ident=idnt )
