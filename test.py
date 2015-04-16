@@ -19,7 +19,7 @@ def main(argv=None):
 
         if (len( argv) == 3):  
         
-            with open(argv[0], 'rb') as f:
+            with open(argv[2], 'rb') as f:
                 exprs, ks = pickle.load(f)
         else:
              exprs = SymbolData.readInkmlDirectory(argv[2], argv[3])

@@ -225,17 +225,17 @@ def readSymbol(root, tracegroup):
     strokeNums = list(map( (lambda e: int(e.attrib['traceDataRef'])), strokeElems)) #ensure that all these are really ints if we have trouble.
     strokes = list(map( (lambda n: readStroke(root, n)), strokeNums))
     if (truthAnnot == None):
-        return Symbol(strokes)
+        truthText = None
     else:
         truthText = doTruthSubs(truthAnnot.text)
-        if identAnnot == None:
+    if identAnnot == None:
             #what do we even do with this?
             #messing with lg files depends on it.
             #for the momment, give it a bogus name and continue.
-            idnt = str(strokeNums).replace(' ', '_')
-        else:
-            idnt = identAnnot.attrib['href'].replace(',', 'COMMA')
-        return Symbol(strokes, correctClass=truthText, norm=True, ident=idnt )
+        idnt = str(strokeNums).replace(' ', '_')
+    else:
+        idnt = identAnnot.attrib['href'].replace(',', 'COMMA')
+    return Symbol(strokes, correctClass=truthText, norm=True, ident=idnt )
     
     
 def readFile(filename, warn=False):
@@ -331,8 +331,17 @@ def exprClasses(inkmls):
 def classNumbers(symbols, keys=None):
     if (keys == None):
         keys = list(symbsByClass(symbols).keys())
-    keys.sort()
-    return list(map((lambda symbol: keys.index(symbol.correctClass)), symbols))
+        keys.sort()
+    cns = []
+    for symbol in symbols:
+       ct =  symbol.correctClass
+       if ct==None:
+           #cns.append(None)
+           return None
+       else:
+           cns.append(keys.index(ct))
+    return cns
+    #return list(map((lambda symbol: keys.index(symbol.correctClass)), symbols))
 
 #The function this is being fed to normalizes, so it doesn't matter that
 #they don't sum to one.
@@ -344,7 +353,6 @@ def symbsPDF (symbols, keys=defaultClasses):
             symbs = symbols
     
 
-        tot = len (symbs)
         clss = symbsByClass(symbs)
         counts = NP.array([len(clss[key]) for key in keys])
         return counts

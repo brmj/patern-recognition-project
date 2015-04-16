@@ -64,19 +64,26 @@ def classifyExpressions(expressions, keys, model, pca, renormalize=True, showAcc
     tot = len(expressions)
     i = 0
     
+#    s = showAcc
+    
     for expr in expressions:
         correct, predicted =  classifyExpression(expr, keys, model, pca, renormalize)
-        assert (len(correct) == len(predicted))
-        cors = cors + [correct]
+        #assert (len(correct) == len(predicted))
+#        if s:
+#            cors = cors + [correct]
+#        if correct == None:
+#            s = False
+#            cors = [[], []]
+        
         preds = preds + [predicted]
         print(i, "/",tot)
         i+=1
         #print (correct, " -> ", predicted)
 
         
-    if showAcc:
-        
-        print( "Accuracy on testing set : ", accuracy_score(NP.concatenate(cors), NP.concatenate(preds)))
+#    if s :
+#        print (cors)
+#        print( "Accuracy on testing set : ", accuracy_score(NP.concatenate(cors), NP.concatenate(preds)))
     return (cors, preds)
     
 def classifyExpression(expression, keys, model, pca, renormalize=True):

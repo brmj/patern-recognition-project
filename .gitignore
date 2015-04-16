@@ -54,6 +54,7 @@ docs/_build/
 target/
 out.mdl
 *.mdl
+*.rar
 
 inkml/
 lgdir/
@@ -73,4 +74,5 @@ test/
 testLg/
 train/
 trainLg/
-
+RFDefaultTrain/
+NNTrain/
