@@ -163,8 +163,6 @@ class Expression:
 
     def writeLG (self, directory, clss = None):
         self.filename = os.path.join(directory, (self.name + '.lg'))
-        else:
-            self.filename = directory + self.name + '.lg'
         if (clss == None):
             print ("none clss")
             assert (len (list(self.classes)) == len (list(self.symbols)))
