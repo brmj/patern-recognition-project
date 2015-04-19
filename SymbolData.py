@@ -18,6 +18,8 @@ from functools import reduce
 """ Contains representations for the relevant data,
     As well as functions for reading and processing it. """
 
+defaultClasses = ['!', '(', ')', '+', '-', '.', '/', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '=', 'A', 'B', 'C', 'COMMA', 'E', 'F', 'G', 'H', 'I', 'L', 'M', 'N', 'P', 'R', 'S', 'T', 'V', 'X', 'Y', '[', '\\Delta', '\\alpha', '\\beta', '\\cos', '\\div', '\\exists', '\\forall', '\\gamma', '\\geq', '\\gt', '\\in', '\\infty', '\\int', '\\lambda', '\\ldots', '\\leq', '\\lim', '\\log', '\\lt', '\\mu', '\\neq', '\\phi', '\\pi', '\\pm', '\\prime', '\\rightarrow', '\\sigma', '\\sin', '\\sqrt', '\\sum', '\\tan', '\\theta', '\\times', '\\{', '\\}', ']', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '|']
+
 class Stroke:
     """Represents a stroke as an n by 2 matrix, with the rows of
       the matrix equivelent to points from first to last. """
@@ -46,6 +48,19 @@ class Stroke:
     def asPoints(self):
         return (list(zip(self.xs, self.ys)))
 
+    def segments(self):
+        self.points = self.asPoints()
+        return list(zip(points[0: len(points)-1], points[1: len(points)]))
+
+    def intersects(self, other):
+        return not find_intersect(self.xs, self.ys, other.xs, other.ys, first=True ) is None
+
+    def intersections(self, other):
+        return find_intersect(self.xs, self.ys, other.xs, other.ys, first=False )
+
+    
+
+
     def scale(self, xmin, xmax, ymin, ymax, xscale, yscale):
         if (xmax != xmin):
             self.xs = list(map( (lambda x: xscale * ((x - xmin) * 1.0 / (xmax - xmin))), self.xs))
@@ -73,7 +88,7 @@ class Stroke:
     def __str__(self):
         return 'Stroke:\n' + str(self.asPoints())
 
-    
+
     
 class Symbol:
     """Represents a symbol as a list of strokes. """
@@ -154,7 +169,7 @@ class Symbol:
 # Holds the symbols from an inkml file.
 class Expression:
 
-    def __init__(self, name, symbols, relations):
+    def __init__(self, name, symbols, relations = None):
         self.name = name
         self.symbols = symbols
         self.relations = relations
@@ -188,13 +203,47 @@ class Expression:
             
             for line in self.symblines:
                 f.write(line)
-
-            f.write('\n#Relations imported from original\n')
+            if self.relations != None:
+                f.write('\n#Relations imported from original\n')
             
-            for relation in self.relations:
-                f.write(relation)
+                for relation in self.relations:
+                    f.write(relation)
 
-defaultClasses = ['!', '(', ')', '+', '-', '.', '/', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '=', 'A', 'B', 'C', 'COMMA', 'E', 'F', 'G', 'H', 'I', 'L', 'M', 'N', 'P', 'R', 'S', 'T', 'V', 'X', 'Y', '[', '\\Delta', '\\alpha', '\\beta', '\\cos', '\\div', '\\exists', '\\forall', '\\gamma', '\\geq', '\\gt', '\\in', '\\infty', '\\int', '\\lambda', '\\ldots', '\\leq', '\\lim', '\\log', '\\lt', '\\mu', '\\neq', '\\phi', '\\pi', '\\pm', '\\prime', '\\rightarrow', '\\sigma', '\\sin', '\\sqrt', '\\sum', '\\tan', '\\theta', '\\times', '\\{', '\\}', ']', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '|']
+
+
+def find_intersect(x_down, y_down, x_up, y_up, first=True):
+    crossings = []
+    for j in range(len(x_down)-1):
+        p0 = NP.array([x_down[j], y_down[j]])
+        p1 = NP.array([x_down[j+1], y_down[j+1]])
+
+        for k in range(len(x_up)-1):
+            q0 = NP.array([x_up[k], y_up[k]])
+            q1 = NP.array([x_up[k+1], y_up[k+1]])
+
+            a = p1 - p0
+            b = q0 - q1
+            c = q0 - p0
+
+            try:
+                params = NP.linalg.solve(NP.column_stack((a, b)), c)
+                if NP.all((params >= 0) & (params <= 1)):
+                    crossing_point = p0 + params[0]*(p1 - p0)
+                    if first:
+                        return crossing_point
+                    else:
+                        crossings.append(crossing_point)
+            except NP.linalg.linalg.LinAlgError:
+                pass
+    
+    if first:
+        return None
+    else:
+        return crossings
+
+
+
+    
 
 # This stuff is used for reading strokes and symbols from files.
 
@@ -212,6 +261,8 @@ def doTruthSubs(text):
         return 'COMMA'
     else: 
         return text
+
+
 
 def readSymbol(root, tracegroup):
     truthAnnot = tracegroup.find(".//{http://www.w3.org/2003/InkML}annotation[@type='truth']")
@@ -246,6 +297,21 @@ def readFile(filename, warn=False):
         if warn:
             print("warning: unparsable file.")
         return []
+
+def readFileStrokes(filename, warn = False):
+    try:
+        #print (filename)
+        tree = ET.parse(filename)
+        root = tree.getroot()
+        traces = root.findall('./{http://www.w3.org/2003/InkML}trace')
+        strokenums = list(map((lambda t:t.get('id')), traces))
+        strokes = list(map((lambda n: readStroke(root, int(n))), strokenums))
+
+        return strokes
+    except:
+        if warn:
+            print("warning: unparsable file.")
+        return [] 
 
 def fnametolg(filename, lgdir):
     fdir, fname = os.path.split(filename)
