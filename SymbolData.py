@@ -134,8 +134,6 @@ class Symbol:
         self.yscale = 1.0
         self.xdif = self.xmax() - self.xmin()
         self.ydif = self.ymax() - self.ymin()
-        #look out for a divide by zero here.
-        #Would fix it, but still not quite sure what the propper way to handel it is.
         if (self.xdif > self.ydif):
             self.yscale = (self.ydif * 1.0) / self.xdif
         elif (self.ydif > self.xdif):
@@ -148,6 +146,10 @@ class Symbol:
         
         for stroke in self.strokes:
             stroke.scale(self.myxmin, self.myxmax, self.myymin, self.myymax, self.xscale, self.yscale)
+
+
+    def strokeIdents(self):
+        return set(map((lambda s: s.ident),self.strokes))
 
     # Given a class, this produces lines for an lg file.
     def lgline(self, clss):
@@ -176,6 +178,19 @@ class Expression:
         self.classes = []
 
 
+    def identSetList(self):
+        return list(map((lambda s: s.strokeIdents()), self.symbols))
+
+    def strokeIdents(self):
+        return functools.reduce( (lambda a, b : a.union(b)), self.identSetList(), set())
+
+    def inGroup(self, ident):
+        for sg in self.identSetList():
+            if ident in sg:
+                return sg
+        return None
+
+    
     def writeLG (self, directory, clss = None):
         self.filename = os.path.join(directory, (self.name + '.lg'))
         if (clss == None):

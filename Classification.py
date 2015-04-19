@@ -56,7 +56,7 @@ def train(model, training, keys, pca_num=None):
 
 def classifyExpressions(expressions, keys, model, pca, renormalize=True, showAcc = False):
     #this sort of does double duty, since it is both classifying the symbols
-    # with side effects and returnning stuff to evaluate the results.
+    # with side effects and returning stuff to evaluate the results.
     # Bad style. Sorry.
 
     cors = list([])

@@ -3,7 +3,7 @@ import matplotlib as MP
 import numpy as NP
 import matplotlib.pyplot as PLT
 import itertools
-from functools import reduce
+import functools
 import SymbolData
 
 
@@ -63,49 +63,33 @@ class Partition:
         return list(map((lambda sg: sg.strokeIdents()), self.strokeGroups))
 
     def strokeIdents(self):
-        return functools.reduce( (lambda a, b : a.union(b)), identSetList(), {})
+        return functools.reduce( (lambda a, b : a.union(b)), self.identSetList(), set())
+
+    def inGroup(self, ident):
+        for sg in self.identSetList():
+            if ident in sg:
+                return sg
+        return None
+
+def comparePartitions(part1, part2, warn = False):
+    correct = 0
+    idents = part1.strokeIdents()
+    if (warn and idents != part2.strokeIdents()):
+        print ("Warning: strokes mismatch.")
+    total = len (idents)
+
+    for stroke in idents:
+        group1 = part1.inGroup(stroke)
+        group2 = part2.inGroup(stroke)
+        assert (not group2 is None)
+        if group1 == group2:
+            correct +=1
+
+    return [correct, total]
 
 
-
-def readTrueStrokeGroup(root, tracegroup):
-    #truthAnnot = tracegroup.find(".//{http://www.w3.org/2003/InkML}annotation[@type='truth']")
-    #identAnnot = tracegroup.find(".//{http://www.w3.org/2003/InkML}annotationXML")    
-    strokeElems = tracegroup.findall('.//{http://www.w3.org/2003/InkML}traceView')
-    assert( len(strokeElems) != 0)
-    strokeNums = list(map( (lambda e: int(e.attrib['traceDataRef'])), strokeElems)) #ensure that all these are really ints if we have trouble.
-    strokes = list(map( (lambda n: readStroke(root, n)), strokeNums))
-    #if (truthAnnot == None):
-    #    truthText = None
-    #else:
-    #    truthText = doTruthSubs(truthAnnot.text)
-    #if identAnnot == None:
-            #what do we even do with this?
-            #messing with lg files depends on it.
-            #for the momment, give it a bogus name and continue.
-    #    idnt = str(strokeNums).replace(', ', '_')
-    #else:
-    #    idnt = identAnnot.attrib['href'].replace(',', 'COMMA')
-    return StrokeGroup(strokes, correctClass=truthText, norm=True, ident=idnt )
+def stupid_partition(strokes, name = None, relations = None):
+    sgs = list(map((lambda s: StrokeGroup([s])), strokes))
+    return Partition(sgs, name, relations)
     
 
-
-
-def readTrueStrokeGroup(root, tracegroup):
-    #truthAnnot = tracegroup.find(".//{http://www.w3.org/2003/InkML}annotation[@type='truth']")
-    #identAnnot = tracegroup.find(".//{http://www.w3.org/2003/InkML}annotationXML")    
-    strokeElems = tracegroup.findall('.//{http://www.w3.org/2003/InkML}traceView')
-    assert( len(strokeElems) != 0)
-    strokeNums = list(map( (lambda e: int(e.attrib['traceDataRef'])), strokeElems)) #ensure that all these are really ints if we have trouble.
-    strokes = list(map( (lambda n: readStroke(root, n)), strokeNums))
-    #if (truthAnnot == None):
-    #    truthText = None
-    #else:
-    #    truthText = doTruthSubs(truthAnnot.text)
-    #if identAnnot == None:
-            #what do we even do with this?
-            #messing with lg files depends on it.
-            #for the momment, give it a bogus name and continue.
-    #    idnt = str(strokeNums).replace(', ', '_')
-    #else:
-    #    idnt = identAnnot.attrib['href'].replace(',', 'COMMA')
-    return StrokeGroup(strokes, correctClass=truthText, norm=True, ident=idnt )
