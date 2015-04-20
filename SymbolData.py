@@ -561,15 +561,26 @@ def unpickleSymbols(filename):
         return pickle.load(f)
 
 # Normalize the data such that x or y -> (0,99) and maintain the aspect ratio
-def normalize(symbols,scale):
+def normalize(symbols, scale):
+    basewidth = 300
+
     k=0
     for symbol in symbols:
         xmin = symbol.xmin()
         ymin = symbol.ymin()
+        xmax = symbol.xmax()
+        ymax = symbol.ymax()
+
+        width = xmax - xmin
+        w_percent = basewidth / float(width)
+
+        # height = ymax - ymin
+        # new_height = float(height) * float(w_percent)
+
         for i in range(len(symbol.strokes)):
             for j in range(len(symbol.strokes[i].xs)):
-                symbol.strokes[i].xs[j] = (symbol.strokes[i].xs[j]-xmin)*scale/2
-                symbol.strokes[i].ys[j] = (symbol.strokes[i].ys[j]-ymin)*scale/2
+                symbol.strokes[i].xs[j] = (symbol.strokes[i].xs[j]-xmin) * w_percent + xmin
+                symbol.strokes[i].ys[j] = (symbol.strokes[i].ys[j]-ymin) * w_percent + ymin
         symbols[k] = symbol
         k+=1    
     return(symbols)
