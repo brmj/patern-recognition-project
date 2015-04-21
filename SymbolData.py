@@ -297,7 +297,7 @@ def readSymbol(root, tracegroup):
         idnt = str(strokeNums).replace(', ', '_')
     else:
         idnt = identAnnot.attrib['href'].replace(',', 'COMMA')
-    return Symbol(strokes, correctClass=truthText, norm=True, ident=idnt )
+    return Symbol(strokes, correctClass=truthText, norm=True, ident=idnt)
     
     
 def readFile(filename, warn=False):
@@ -562,7 +562,7 @@ def unpickleSymbols(filename):
 
 # Normalize the data such that x or y -> (0,99) and maintain the aspect ratio
 def normalize(symbols, scale):
-    basewidth = 300
+    basewidth = 100
 
     k=0
     for symbol in symbols:
@@ -574,13 +574,12 @@ def normalize(symbols, scale):
         width = xmax - xmin
         w_percent = basewidth / float(width)
 
-        # height = ymax - ymin
-        # new_height = float(height) * float(w_percent)
-
         for i in range(len(symbol.strokes)):
             for j in range(len(symbol.strokes[i].xs)):
                 symbol.strokes[i].xs[j] = (symbol.strokes[i].xs[j]-xmin) * w_percent + xmin
                 symbol.strokes[i].ys[j] = (symbol.strokes[i].ys[j]-ymin) * w_percent + ymin
+
         symbols[k] = symbol
         k+=1    
     return(symbols)
+
