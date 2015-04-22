@@ -10,8 +10,10 @@ import random
 import numpy.random
 import scipy.stats
 import pickle
-import functools
+#import functools
 import itertools
+import math
+import Segmentation
 from functools import reduce
 
 
@@ -50,16 +52,53 @@ class Stroke:
 
     def segments(self):
         self.points = self.asPoints()
-        return list(zip(points[0: len(points)-1], points[1: len(points)]))
+        return list(zip(self.points[0: len(self.points)-1], self.points[1: len(self.points)]))
 
+    def distances(self):
+        return list(map((lambda s: distance(s[0], s[1])), self.segments())) 
+
+    def minDist(self):
+        return NP.array(self.distances()).min()
+
+    def resample(self, dist):
+        self.segs = self.segments()
+        self.dists = self.distances()
+        self.l = len(self.segs)
+        self.newpoints = []
+        #self.newpoints.append(self.segs[0][0])
+
+        for i in range(0, self.l):
+            self.seg = self.segs[i]
+            self.p1 = self.seg[0]
+            self.p2 = self.seg[1]
+            self.newpoints.append(self.p1)
+
+            if (self.dists[i] > 2 * dist ):
+                self.numnew = math.ceil(self.dists[i] / dist) - 1
+                self.xinc = (self.p2[0] - self.p1[0]) / float(self.numnew)
+                self.yinc = (self.p2[1] - self.p1[1]) / float(self.numnew)
+                for j in range(0, self.numnew - 1):
+                    self.newx = self.p1[0] +(self.xinc * (j + 1))
+                    self.newy = self.p1[1] +(self.yinc * (j + 1))
+                    self.newpoints.append((self.newx, self.newy))
+        self.newpoints.append(self.p2)
+        print ( self.newpoints )
+
+                    
     def intersects(self, other):
-        return not find_intersect(self.xs, self.ys, other.xs, other.ys, first=True ) is None
-
+        if self.couldIntersect(self, other):
+            return not find_intersect(self.xs, self.ys, other.xs, other.ys, first=True ) is None
+        else:
+            return False
+        
     def intersections(self, other):
-        return find_intersect(self.xs, self.ys, other.xs, other.ys, first=False )
-
-    
-
+        if self.couldIntersect(self, other):
+            return find_intersect(self.xs, self.ys, other.xs, other.ys, first=False )
+        else:
+            return []
+        
+    def couldIntersect(self, other):
+        return (not (self.xmin() > other.xmax() or other.xmin() > self.xmax() or self.ymin() > other.ymax() or other.ymin() > self.ymax()))
 
     def scale(self, xmin, xmax, ymin, ymax, xscale, yscale):
         if (xmax != xmin):
@@ -92,12 +131,14 @@ class Stroke:
     
 class Symbol:
     """Represents a symbol as a list of strokes. """
-    def __init__(self, strokes, correctClass = None, norm = True, ident = None):
+    def __init__(self, strokes, correctClass = None, norm = True, ident = None, intersections = None):
         self.strokes = strokes
         self.ident = ident
+        self.intersections = intersections
         if norm:
             self.normalize()
         self.correctClass = correctClass
+        
 
     def plot(self, show = True, clear = True):
         if clear:
@@ -106,7 +147,7 @@ class Symbol:
             stroke.plot(show = False, clear = False)
         if show:
             PLT.show()
-
+   
     def xmin(self):
         return min(list(map( (lambda stroke: stroke.xmin()), self.strokes)))
 
@@ -147,6 +188,7 @@ class Symbol:
         for stroke in self.strokes:
             stroke.scale(self.myxmin, self.myxmax, self.myymin, self.myymax, self.xscale, self.yscale)
 
+        self.intersections = list(map((lambda i: scalepoint(self.myxmin, self.myxmax, self.myymin, self.myymax, self.xscale, self.yscale, i)), self.intersections))
 
     def strokeIdents(self):
         return set(map((lambda s: s.ident),self.strokes))
@@ -156,7 +198,11 @@ class Symbol:
         self.line = 'O, ' + self.ident + ', ' + clss + ', 1.0, ' + (', '.join(list(map((lambda s: str(s.ident)), self.strokes)))) + '\n'
         #do we need a newline here? Return to this if so.        
         return self.line
-            
+
+    def rename(self, clss, cnt):
+        self.ident = clss + "_" + str(cnt)
+
+        
     def __str__(self):
         self.strng = 'Symbol'
         if self.correctClass != '':
@@ -190,11 +236,26 @@ class Expression:
                 return sg
         return None
 
+    def rename (self, clss = None):
+        if (clss == None):
+            #print ("none clss")
+            assert (len (list(self.classes)) == len (list(self.symbols)))
+            self.clss = list(self.classes)
+        else:
+            self.clss = list(clss)
+
+        self.i = 0
+        for symbol in self.symbols:
+           # print (self.i)
+           self.cls = self.clss[self.i]
+           self.symbol.rename(self.cls, self.clss[:self.i + 1].count(self.cls)) #not the most efficient, but good enough.
+           self.i = self.i + 1
+            
     
     def writeLG (self, directory, clss = None):
         self.filename = os.path.join(directory, (self.name + '.lg'))
         if (clss == None):
-            print ("none clss")
+            #print ("none clss")
             assert (len (list(self.classes)) == len (list(self.symbols)))
             self.clss = list(self.classes)
         else:
@@ -224,8 +285,27 @@ class Expression:
                 for relation in self.relations:
                     f.write(relation)
 
+                                       
+def scalePoint (xmin, xmax, ymin, ymax, xscale, yscale, point):
+    newpoint = point
+    if (xmax != xmin):
+        newpoint[0] =  xscale * ((point[0] - xmin) * 1.0 / (xmax - xmin))
+    else:
+        newpoint[0] = 0
+    if (ymax != ymin):
+        newpoint[1] = yscale * ((point[1] - ymin) * 1.0 / (ymax - ymin))
+    else:
+        newpoint[1] = 0
+    return newpoint
+                                       
+def distance(p1, p2):
+    a = numpy.array([p1[0] - p2[0], p1[1] - p2[1]])
+    a = NP.power(a, 2)
+    a = a.sum()
+    a = NP.sqrt(a)
+    return a
 
-
+#utility function to find stroke intersections.
 def find_intersect(x_down, y_down, x_up, y_up, first=True):
     crossings = []
     for j in range(len(x_down)-1):
