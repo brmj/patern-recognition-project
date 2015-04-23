@@ -659,6 +659,34 @@ def normalize(symbols, scale):
                 symbol.strokes[i].xs[j] = (symbol.strokes[i].xs[j]-xmin) * w_percent + xmin
                 symbol.strokes[i].ys[j] = (symbol.strokes[i].ys[j]-ymin) * w_percent + ymin
 
+            # find intersection point for normalized strokes
+            while (i+1) in range(len(symbol.strokes)):
+                x_down = symbol.strokes[i].xs
+                y_down = symbol.strokes[i].ys
+                x_up = symbol.strokes[i+1].xs
+                y_up = symbol.strokes[i+1].ys
+
+                for j in range(len(x_down)-1):
+                    p0 = NP.array([x_down[j], y_down[j]])
+                    p1 = NP.array([x_down[j+1], y_down[j+1]])
+
+                    for k in range(len(x_up)-1):
+                        q0 = NP.array([x_up[k], y_up[k]])
+                        q1 = NP.array([x_up[k+1], y_up[k+1]])
+
+                        a = p1 - p0
+                        b = q0 - q1
+                        c = q0 - p0
+
+                        try:
+                            params = NP.linalg.solve(NP.column_stack((a, b)), c)
+                            if NP.all((params >= 0) & (params <= 1)):
+                                crossing_point = p0 + params[0]*(p1 - p0)
+                                return crossing_point
+                        except NP.linalg.linalg.LinAlgError:
+                            pass
+
+
         symbols[k] = symbol
         k+=1    
     return(symbols)
