@@ -10,16 +10,20 @@ import SymbolData
 
 class StrokeGroup:
     """ Holds a set of strokes with no normalization or scaling. Used in segmentation. """
-    def __init__(self, strokes, intersections = None):
+    def __init__(self, strokes, intersections = None, correctClass = None, norm = True, ident = None):
         self.strokes = strokes
         if intersections is None:
             self.intersections = self.calcIntersections()
         else:
             self.intesections = intersections
+
+        self.correctClass = correctClass
+        self.norm = norm
+        self.ident = ident
             
-    def toSymbol(self, correctClass = None, norm = True, ident = None):
+    def toSymbol(self):
         self.newstrokes = self.strokes
-        return (SymbolData.Symbol(self.newstrokes, correctClass, norm, ident, self.intersections))
+        return (SymbolData.Symbol(self.newstrokes, self.correctClass, self.norm, self.ident, self.intersections))
 
     def strokeIdents(self):
         return set(map((lambda s: s.ident),self.strokes)) 
@@ -125,6 +129,9 @@ class Partition:
     def strokeIdents(self):
         return functools.reduce( (lambda a, b : a.union(b)), self.identSetList(), set())
 
+    def toSymbols(self):
+        return list(map((lambda sg: sg.toSymbol()), self.strokeGroups))
+    
     def inGroup(self, ident):
         for sg in self.identSetList():
             if ident in sg:
