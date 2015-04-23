@@ -191,7 +191,8 @@ class Symbol:
         self.intersections = list(map((lambda i: scalePoint(self.myxmin, self.myxmax, self.myymin, self.myymax, self.xscale, self.yscale, i)), self.intersections))
 
     def strokeIdents(self):
-        return set(map((lambda s: s.ident),self.strokes))
+        #print (list(map((lambda s: s.ident),self.strokes)))
+        return set(list(map((lambda s: s.ident),self.strokes)))
 
     # Given a class, this produces lines for an lg file.
     def lgline(self, clss):
@@ -225,10 +226,12 @@ class Expression:
 
 
     def identSetList(self):
+        #print (list(map((lambda s: s.strokeIdents()), self.symbols)))
         return list(map((lambda s: s.strokeIdents()), self.symbols))
 
     def strokeIdents(self):
-        return functools.reduce( (lambda a, b : a.union(b)), self.identSetList(), set())
+        #print (reduce( (lambda a, b : a.union(b)), self.identSetList(), set()))
+        return reduce( (lambda a, b : a.union(b)), self.identSetList(), set())
 
     def inGroup(self, ident):
         for sg in self.identSetList():
@@ -380,23 +383,25 @@ def readSymbol(root, tracegroup):
     else:
         idnt = identAnnot.attrib['href'].replace(',', 'COMMA')
         
-    sg = Segmentation.StrokeGroup(strokes)
-    return sg.toSymbol(correctClass=truthText, norm=True, ident=idnt )
+    sg = Segmentation.StrokeGroup(strokes, correctClass = truthText, norm=True, ident=idnt )
+    return sg.toSymbol()
 
     
     
 def readFile(filename, warn=False):
+    tree = None
     try:
         #print (filename)
         tree = ET.parse(filename)
-        root = tree.getroot()
-        tracegroups = root.findall('./*/{http://www.w3.org/2003/InkML}traceGroup')
-        symbols = list(map((lambda t: readSymbol(root, t)), tracegroups))
-        return symbols
     except:
         if warn:
             print("warning: unparsable file.")
         return []
+    root = tree.getroot()
+    tracegroups = root.findall('./*/{http://www.w3.org/2003/InkML}traceGroup')
+    symbols = list(map((lambda t: readSymbol(root, t)), tracegroups))
+    return symbols
+       
 
 def readFileStrokes(filename, warn = False):
     try:
@@ -430,7 +435,15 @@ def readInkml(filename, lgdir, warn=False):
 
 
     return Expression(name, symbols, readLG(lgfile))
-    
+
+def readAndSegment(filename, segfun, warn = False, raw = False):
+    strokes = readFileStrokes(filename, warn)
+    partition = segfun(strokes)
+    name, ext = os.path.splitext(filename)
+    if raw:
+        return partition
+    else:
+        return Expression(name, partition.toSymbols(), None)
 
 def readLG(filename):
 
@@ -469,6 +482,17 @@ def readInkmlDirectory(filename, lgdir, warn=False):
     fnames = filenames(filename)
     return list(map((lambda f: readInkml(f, lgdir, warn)), fnames))
 
+def readAndSegmentDirectory(filename, segfun, warn=False, raw = False):
+    fnames = filenames(filename)
+    return list(map((lambda f: readAndSegment(f, segfun, warn, raw)), fnames))
+
+def testSegmentation(filename, lgdir, segfun, warn = False):
+    exprs = readInkmlDirectory(filename, lgdir, warn)
+    parts = readAndSegmentDirectory(filename, segfun, warn, raw = True)
+    segrate = Segmentation.comparePartitionsLists(parts, exprs)
+    print (segrate)
+    return segrate
+    
 def allSymbols(inkmls):
     return reduce( (lambda a, b: a + b), (list(map ((lambda i: i.symbols), inkmls))))
 

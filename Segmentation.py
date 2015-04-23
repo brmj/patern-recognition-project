@@ -1,3 +1,4 @@
+
 import xml.etree.ElementTree as ET
 import matplotlib as MP
 import numpy as NP
@@ -26,6 +27,7 @@ class StrokeGroup:
         return (SymbolData.Symbol(self.newstrokes, self.correctClass, self.norm, self.ident, self.intersections))
 
     def strokeIdents(self):
+        #print("sg ", set(map((lambda s: s.ident),self.strokes)) )
         return set(map((lambda s: s.ident),self.strokes)) 
 
     def plot(self, show = True, clear = True):
@@ -84,7 +86,7 @@ class StrokeGroup:
         for stroke1 in self.strokes:
             for stroke2 in other.strokes:
                 self.strokePairs.append([stroke1, stroke2])
-        for pair in strokePairs:
+        for pair in self.strokePairs:
             if(stroke1.intersects(stroke2)):
                 return True
             
@@ -124,6 +126,7 @@ class Partition:
         return Expression(self.name, list(map((lambda sg: sg.toSymbol()), self.strokeGroups)), self.relations)
 
     def identSetList(self):
+        #print ("Part: ", list(map((lambda sg: sg.strokeIdents()), self.strokeGroups)))
         return list(map((lambda sg: sg.strokeIdents()), self.strokeGroups))
 
     def strokeIdents(self):
@@ -152,27 +155,31 @@ class Partition:
                 self.i+=1
             self.newGroups.append(self.current)
             self.strokeGroups = self.newGroups
-                    
-    
+                        
+
+            
 def comparePartitions(part1, part2, warn = False):
     correct = 0
     idents = part1.strokeIdents()
     if (warn and idents != part2.strokeIdents()):
         print ("Warning: strokes mismatch.")
     total = len (idents)
-
+    #print (idents)
+    #print (total)
+    #print (part2.strokeGroups)
     for stroke in idents:
         group1 = part1.inGroup(stroke)
         group2 = part2.inGroup(stroke)
-        assert (not group2 is None)
+        #assert (not group2 is None)
         if group1 == group2:
             correct +=1
 
     return [correct, total]
 
 def comparePartitionsLists(l1, l2, warn = False):
-    results = numpy.array(list(map((lambda ps: comparePartitions(ps[0], ps[1], warn)), zip(part1, part2))))
+    results = NP.array(list(map((lambda ps: comparePartitions(ps[0], ps[1], warn)), zip(l1, l2))))
     sums = results.sum(axis = 0)
+    #print (sums)
     perc = sums[0] / sums[1]
     return perc
 
