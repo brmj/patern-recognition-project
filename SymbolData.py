@@ -86,14 +86,14 @@ class Stroke:
 
                     
     def intersects(self, other):
-        if self.couldIntersect(self, other):
+        if self.couldIntersect(other):
             return not find_intersect(self.xs, self.ys, other.xs, other.ys, first=True ) is None
         else:
             return False
         
     def intersections(self, other):
-        if self.couldIntersect(self, other):
-            return find_intersect(self.xs, self.ys, other.xs, other.ys, first=False )
+        if self.couldIntersect(other):
+            return list(map((lambda a: tuple(a)), find_intersect(self.xs, self.ys, other.xs, other.ys, first=False)))
         else:
             return []
         
@@ -188,7 +188,7 @@ class Symbol:
         for stroke in self.strokes:
             stroke.scale(self.myxmin, self.myxmax, self.myymin, self.myymax, self.xscale, self.yscale)
 
-        self.intersections = list(map((lambda i: scalepoint(self.myxmin, self.myxmax, self.myymin, self.myymax, self.xscale, self.yscale, i)), self.intersections))
+        self.intersections = list(map((lambda i: scalePoint(self.myxmin, self.myxmax, self.myymin, self.myymax, self.xscale, self.yscale, i)), self.intersections))
 
     def strokeIdents(self):
         return set(map((lambda s: s.ident),self.strokes))
@@ -287,16 +287,18 @@ class Expression:
 
                                        
 def scalePoint (xmin, xmax, ymin, ymax, xscale, yscale, point):
-    newpoint = point
     if (xmax != xmin):
-        newpoint[0] =  xscale * ((point[0] - xmin) * 1.0 / (xmax - xmin))
+        newx =  xscale * ((point[0] - xmin) * 1.0 / (xmax - xmin))
     else:
-        newpoint[0] = 0
+        newx = 0
     if (ymax != ymin):
-        newpoint[1] = yscale * ((point[1] - ymin) * 1.0 / (ymax - ymin))
+        newy = yscale * ((point[1] - ymin) * 1.0 / (ymax - ymin))
     else:
-        newpoint[1] = 0
-    return newpoint
+        newy = 0
+
+    newx = (newx * 2) - xscale
+    newy = (newy * 2) - yscale
+    return (newx, newy)
                                        
 def distance(p1, p2):
     a = numpy.array([p1[0] - p2[0], p1[1] - p2[1]])
@@ -377,7 +379,10 @@ def readSymbol(root, tracegroup):
         idnt = str(strokeNums).replace(', ', '_')
     else:
         idnt = identAnnot.attrib['href'].replace(',', 'COMMA')
-    return Symbol(strokes, correctClass=truthText, norm=True, ident=idnt)
+        
+    sg = Segmentation.StrokeGroup(strokes)
+    return sg.toSymbol(correctClass=truthText, norm=True, ident=idnt )
+
     
     
 def readFile(filename, warn=False):
@@ -408,6 +413,8 @@ def readFileStrokes(filename, warn = False):
             print("warning: unparsable file.")
         return [] 
 
+
+    
 def fnametolg(filename, lgdir):
     fdir, fname = os.path.split(filename)
     name, ext = os.path.splitext(fname)
@@ -659,33 +666,12 @@ def normalize(symbols, scale):
                 symbol.strokes[i].xs[j] = (symbol.strokes[i].xs[j]-xmin) * w_percent + xmin
                 symbol.strokes[i].ys[j] = (symbol.strokes[i].ys[j]-ymin) * w_percent + ymin
 
-            # find intersection point for normalized strokes
-            while (i+1) in range(len(symbol.strokes)):
-                x_down = symbol.strokes[i].xs
-                y_down = symbol.strokes[i].ys
-                x_up = symbol.strokes[i+1].xs
-                y_up = symbol.strokes[i+1].ys
-
-                for j in range(len(x_down)-1):
-                    p0 = NP.array([x_down[j], y_down[j]])
-                    p1 = NP.array([x_down[j+1], y_down[j+1]])
-
-                    for k in range(len(x_up)-1):
-                        q0 = NP.array([x_up[k], y_up[k]])
-                        q1 = NP.array([x_up[k+1], y_up[k+1]])
-
-                        a = p1 - p0
-                        b = q0 - q1
-                        c = q0 - p0
-
-                        try:
-                            params = NP.linalg.solve(NP.column_stack((a, b)), c)
-                            if NP.all((params >= 0) & (params <= 1)):
-                                crossing_point = p0 + params[0]*(p1 - p0)
-                                return crossing_point
-                        except NP.linalg.linalg.LinAlgError:
-                            pass
-
+        newints = []
+        for intr in symbol.intersections:
+            tmpx = (intr[0]-xmin * w_percent + xmin)
+            tmpy = (intr[1]-ymin * w_percent + ymin)
+            newints.append((tmpx, tmpy))
+        symbol.intersections = newints
 
         symbols[k] = symbol
         k+=1    

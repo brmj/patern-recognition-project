@@ -18,7 +18,8 @@ class StrokeGroup:
             self.intesections = intersections
             
     def toSymbol(self, correctClass = None, norm = True, ident = None):
-        return (Symbol(self.strokes, correctClass, norm, ident))
+        self.newstrokes = self.strokes
+        return (SymbolData.Symbol(self.newstrokes, correctClass, norm, ident, self.intersections))
 
     def strokeIdents(self):
         return set(map((lambda s: s.ident),self.strokes)) 
@@ -85,22 +86,22 @@ class StrokeGroup:
             
         return False
 
-    def intersections(self, other = None):
+    def calcIntersections(self, other = None):
         self.newints = []
         self.strokePairs = []
         if (not other is None):
             for stroke1 in self.strokes:
                 for stroke2 in other.strokes:
-                    self.strokePairs.append([stroke1, stroke2])
+                    self.strokePairs.append((stroke1, stroke2))
         else:
             self.l = len(self.strokes)
-            for i in range(0, l - 1):
+            for i in range(0, self.l - 1):
                 self.stroke1 = self.strokes[i]
-                for j in range(i + 1, l):
+                for j in range(i + 1, self.l):
                     self.stroke2 = self.strokes[j]
-                    self.strokepairs.append([stroke1, stroke2])
+                    self.strokePairs.append((self.stroke1, self.stroke2))
 
-        for pair in strokePairs:
+        for (stroke1, stroke2) in self.strokePairs:
             self.newints = self.newints + stroke1.intersections(stroke2)
         return self.newints
              
