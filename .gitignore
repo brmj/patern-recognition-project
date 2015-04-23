@@ -76,3 +76,9 @@ train/
 trainLg/
 RFDefaultTrain/
 NNTrain/
+*~
+*\#
+Results_lgout/
+lgout/
+results*
+submission*

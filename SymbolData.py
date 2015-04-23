@@ -377,7 +377,8 @@ def readSymbol(root, tracegroup):
         idnt = str(strokeNums).replace(', ', '_')
     else:
         idnt = identAnnot.attrib['href'].replace(',', 'COMMA')
-    return Symbol(strokes, correctClass=truthText, norm=True, ident=idnt )
+    sg = Segmentation.StrokeGroup(strokes)
+    return sg.toSymbol(correctClass=truthText, norm=True, ident=idnt )
     
     
 def readFile(filename, warn=False):
@@ -408,6 +409,8 @@ def readFileStrokes(filename, warn = False):
             print("warning: unparsable file.")
         return [] 
 
+
+    
 def fnametolg(filename, lgdir):
     fdir, fname = os.path.split(filename)
     name, ext = os.path.splitext(fname)
