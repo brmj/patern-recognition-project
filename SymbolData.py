@@ -11,7 +11,6 @@ import numpy.random
 import scipy.stats
 import pickle
 #import functools
-import itertools
 import math
 import Segmentation
 from functools import reduce
@@ -29,7 +28,7 @@ class Stroke:
         self.ident = ident
         self.xs = []
         self.ys = []
-        for point in points:
+        for point in self.rmcolinear(points):
             self.addPoint(point, flip)
 
     def plot(self, show = True, clear = True):
@@ -41,12 +40,38 @@ class Stroke:
             PLT.show()
 
     def addPoint(self, point, flip = False):
+        if (len(self.xs) > 0):
+            if (self.xs[len(self.xs) - 1] == point[0] and self.ys[len(self.ys)-1] == point[1]):
+                return
         self.xs.append(point[0])
         if flip:
             self.ys.append(-1 * point[1])
         else:
             self.ys.append(point[1])
 
+    def colinear(self, p1, p2, p3):
+        if (p1[0] == p2[0]):
+            return p2[0] == p3[0]
+        else if (p2[0] == p3[0]):
+            return False
+        
+        else:
+            self.slopes = NP.array([(p2[1] - p1[1]), (p3[1] - p2[1])]) / NP.array([(p2[0] - p1[0]), (p3[0] - p2[0])])
+            return (slopes[0] == slopes[1])
+
+    def rmcolinear(self, points):
+        if len(points) < 3:
+            return points
+
+        self.h = 0
+        self.newpoints = points[:2]
+        for p in points[2:]:
+            if self.colinear(points[self.h], points[self.h + 1], p):
+                self.newpoints = self.newpoints[:len(self.newpoints) - 1].append(p)
+            else:
+                self.h += 1
+        return newpoints
+        
     def asPoints(self):
         return (list(zip(self.xs, self.ys)))
 
@@ -57,6 +82,9 @@ class Stroke:
     def distances(self):
         return list(map((lambda s: distance(s[0], s[1])), self.segments())) 
 
+    def totlen(self):
+        return NP.array(self.distances()).sum()
+    
     def minDist(self):
         return NP.array(self.distances()).min()
 
@@ -161,13 +189,13 @@ class Symbol:
         return max(list(map( (lambda stroke: stroke.ymax()), self.strokes)))
 
     def points(self):
-        return functools.reduce( (lambda a, b : a + b), (list(map ((lambda f: f.asPoints()), self.strokes))), [])
+        return reduce( (lambda a, b : a + b), (list(map ((lambda f: f.asPoints()), self.strokes))), [])
 
     def xs(self):
-        return functools.reduce( (lambda a, b : a + b), (list(map ((lambda f: f.xs), self.strokes))), [])
+        return reduce( (lambda a, b : a + b), (list(map ((lambda f: f.xs), self.strokes))), [])
 
     def ys(self):
-        return functools.reduce( (lambda a, b : a + b), (list(map ((lambda f: f.ys), self.strokes))), [])
+        return reduce( (lambda a, b : a + b), (list(map ((lambda f: f.ys), self.strokes))), [])
     
     def normalize(self):
 
@@ -683,6 +711,7 @@ def normalize(symbols, scale):
         ymax = symbol.ymax()
 
         width = xmax - xmin
+        #need to fix a division by 0 here.
         w_percent = basewidth / float(width)
 
         for i in range(len(symbol.strokes)):

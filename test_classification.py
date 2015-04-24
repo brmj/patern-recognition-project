@@ -5,22 +5,24 @@ import os
 import SymbolData
 import Classification
 import Features
-import Segmentation
 from sklearn.metrics import accuracy_score
 
-usage = "Usage: $ python test.py stateFilename outdir inkmldir"
+usage = "Usage: $ python test.py stateFilename outdir (testFile.dat | inkmldir lgdir)"
 
 def main(argv=None):
     if argv is None:
         argv = sys.argv[1:] #dirty trick to make this convenient in the interpreter.
-    if (len (argv) != 3): 
+    if (len (argv) < 3 or len (argv) > 4): 
         print(("bad number of args:" , len(argv)))
         print(usage)
     else:
 
-  
-        exprs = SymbolData.readAndSegmentDirectory(argv[2], Segmentation.intersection_partition)
-        #exprs = SymbolData.readInkmlDirectory(argv[2], argv[3])
+        if (len( argv) == 3):  
+        
+            with open(argv[2], 'rb') as f:
+                exprs, ks = pickle.load(f)
+        else:
+             exprs = SymbolData.readInkmlDirectory(argv[2], argv[3])
 
         
         #model, pca = joblib.load(argv[1]) 
