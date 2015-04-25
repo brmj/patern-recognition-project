@@ -6,6 +6,7 @@ import matplotlib.pyplot as PLT
 import itertools
 import functools
 import SymbolData
+from functools import reduce
 
 
 
@@ -21,10 +22,16 @@ class StrokeGroup:
         self.correctClass = correctClass
         self.norm = norm
         self.ident = ident
+
+        #let's see how it goes... Should still add stuff to deal with _almost_ colinear points, _almost_ identical, etc.
+        #self.resample()
+        self.strokenum = len(self.strokes)
+        if(self.norm):
+            self.uniformResample(28) #a good start, since the prof suggested 30.
             
     def toSymbol(self):
         self.newstrokes = self.strokes
-        return (SymbolData.Symbol(self.newstrokes, self.correctClass, self.norm, self.ident, self.intersections))
+        return (SymbolData.Symbol(self.newstrokes, self.correctClass, self.norm, self.ident, self.intersections, self.strokenum))
 
     def strokeIdents(self):
         #print("sg ", set(map((lambda s: s.ident),self.strokes)) )
@@ -46,6 +53,12 @@ class StrokeGroup:
             return self
         else:
             return StrokeGroup(self.strokes + other.strokes, intersections = self.newInts)
+
+    def uniformResample(self, divs):
+        self.newident =  str(list(map((lambda s: s.ident), self.strokes)))
+        self.newstroke = SymbolData.Stroke(reduce ((lambda a, b: a + b.points), self.strokes, []), ident = self.newident)
+        self.newstroke.uniformResample(divs)
+        self.strokes = [self.newstroke]
         
     def minDist(self):
         return (NP.array(list(map((lambda s: s.minDist()), self.strokes))).min())
@@ -54,7 +67,9 @@ class StrokeGroup:
         return (list(map((lambda s: s.distances()), self.strokes)))
 
     def lens(self):
-        return (list(map(NP.sum, self.dists())))
+        return (list(map((lambda s: s.totlen()), self.strokes)))
+
+    def totlen(self): NP.sum(self.lens())
     
     def resample(self):
         self.md = self.minDist()

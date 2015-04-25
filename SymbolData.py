@@ -21,6 +21,9 @@ from functools import reduce
 
 defaultClasses = ['!', '(', ')', '+', '-', '.', '/', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '=', 'A', 'B', 'C', 'COMMA', 'E', 'F', 'G', 'H', 'I', 'L', 'M', 'N', 'P', 'R', 'S', 'T', 'V', 'X', 'Y', '[', '\\Delta', '\\alpha', '\\beta', '\\cos', '\\div', '\\exists', '\\forall', '\\gamma', '\\geq', '\\gt', '\\in', '\\infty', '\\int', '\\lambda', '\\ldots', '\\leq', '\\lim', '\\log', '\\lt', '\\mu', '\\neq', '\\phi', '\\pi', '\\pm', '\\prime', '\\rightarrow', '\\sigma', '\\sin', '\\sqrt', '\\sum', '\\tan', '\\theta', '\\times', '\\{', '\\}', ']', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '|']
 
+twoGroup = [0, 17, 46, 53, 82, 83]
+threeGroup = [41, 42, 54, 55, 65, 68]
+
 class Stroke:
     """Represents a stroke as an n by 2 matrix, with the rows of
       the matrix equivelent to points from first to last. """
@@ -28,6 +31,8 @@ class Stroke:
         self.ident = ident
         self.xs = []
         self.ys = []
+        assert (not points is None)
+        assert (len (points) == 0 or len(points[0]) == 2)
         for point in self.rmcolinear(points):
             self.addPoint(point, flip)
 
@@ -52,25 +57,39 @@ class Stroke:
     def colinear(self, p1, p2, p3):
         if (p1[0] == p2[0]):
             return p2[0] == p3[0]
-        else if (p2[0] == p3[0]):
+        elif (p2[0] == p3[0]):
             return False
         
         else:
-            self.slopes = NP.array([(p2[1] - p1[1]), (p3[1] - p2[1])]) / NP.array([(p2[0] - p1[0]), (p3[0] - p2[0])])
-            return (slopes[0] == slopes[1])
+            self.slopes = (NP.array([(p2[1] - p1[1]), (p3[1] - p2[1])]) / NP.array([(p2[0] - p1[0]), (p3[0] - p2[0])]))
+            return (self.slopes[0] == self.slopes[1])
 
     def rmcolinear(self, points):
+        #print (points)
+        assert(not points is None)
         if len(points) < 3:
             return points
 
-        self.h = 0
-        self.newpoints = points[:2]
-        for p in points[2:]:
-            if self.colinear(points[self.h], points[self.h + 1], p):
-                self.newpoints = self.newpoints[:len(self.newpoints) - 1].append(p)
-            else:
-                self.h += 1
-        return newpoints
+        else:
+            self.h = 0
+            self.newpoints = points[:2]
+            assert(not self.newpoints is None)
+            for p in points[2:]:
+                if self.colinear(points[self.h], points[self.h + 1], p):
+                    #print("foo")
+                    assert (not self.newpoints is None)
+                    self.l = len(self.newpoints)
+                    #print(self.newpoints)
+                    #print(self.newpoints[:self.l - 1])
+                    assert (not self.newpoints[:self.l - 1] is None)
+                    self.newerpoints = self.newpoints[:self.l - 1]
+                    self.newerpoints.append(p)
+                    assert(not self.newerpoints is None)
+                    #print(self.newerpoints)
+                    self.newpoints = self.newerpoints
+                else:
+                    self.h += 1
+            return self.newpoints
         
     def asPoints(self):
         return (list(zip(self.xs, self.ys)))
@@ -86,9 +105,12 @@ class Stroke:
         return NP.array(self.distances()).sum()
     
     def minDist(self):
-        return NP.array(self.distances()).min()
+        if (len(self.distances()) == 0):
+            return 0
+        else:
+            return NP.array(self.distances()).min()
 
-    def resample(self, dist):
+    def resample(self, dist, dmin = None, dmax = None):
         self.segs = self.segments()
         self.dists = self.distances()
         self.l = len(self.segs)
@@ -112,7 +134,33 @@ class Stroke:
         self.newpoints.append(self.p2)
         print ( self.newpoints )
 
-                    
+    def uniformResample(self, divs):
+        self.inc = self.totlen() / (divs + 1)
+        self.segs = self.segments()
+        self.dists = self.distances()
+        self.n = 0
+        self.rem = 0
+        self.newpoints = [self.points[0]]
+        self.curdist = dists
+        if(len(self.points) > 1):
+            for i in range(0, divs + 1):
+                self.tempinc = self.inc
+                while(self.tempinc > self.curdist):
+                    self.tempinc -= self.curdist
+                    self.n += 1
+                    self.rem = 0
+                self.perc = (self.tempinc + self.rem) / float(self.curdist) #can't get a div 0 here, unless other things break.
+                self.rem += self.tempinc
+                self.curseg = self.segs[n]
+                self.p1 = self.curseg[0]
+                self.p2 = self.curseg[1]
+                self.xdist = self.p2[0] - self.p1[0]
+                self.ydist = self.p2[1] - self.p1[1]
+                self.newpoint = (self.p1[0] + (self.perc * self.xdist), self.p1[0] + (self.perc * self.xdist))
+                self.newpoints.append(self.newpoint)
+        self.points = self.newpoints
+                
+                                                              
     def intersects(self, other):
         if self.couldIntersect(other):
             return not find_intersect(self.xs, self.ys, other.xs, other.ys, first=True ) is None
@@ -159,13 +207,19 @@ class Stroke:
     
 class Symbol:
     """Represents a symbol as a list of strokes. """
-    def __init__(self, strokes, correctClass = None, norm = True, ident = None, intersections = None):
+    def __init__(self, strokes, correctClass = None, norm = True, ident = None, intersections = None, strokenum = None):
         self.strokes = strokes
+        assert (strokes != [])
+        assert (not strokes is None)
         self.ident = ident
         self.intersections = intersections
         if norm:
             self.normalize()
         self.correctClass = correctClass
+        if(strokenum is None):
+            self.strokenum = len(strokes)
+        else:
+            self.strokenum = strokenum
         
 
     def plot(self, show = True, clear = True):
@@ -381,6 +435,7 @@ def readStroke(root, strokeNum):
     strokeText = strokeElem.text.strip()
     pointStrings = strokeText.split(',')
     points = list(map( (lambda s: [float(n) for n in (s.strip()).split(' ')]), pointStrings))
+    points = list(map( (lambda p: p[:2]), points))
     return Stroke(points, flip=True, ident=strokeNum)
 
 #Are there any other substitutions of this type we need to make? Come back to this.
@@ -712,17 +767,20 @@ def normalize(symbols, scale):
 
         width = xmax - xmin
         #need to fix a division by 0 here.
+        if width == 0:
+            width = 1
         w_percent = basewidth / float(width)
 
         for i in range(len(symbol.strokes)):
             for j in range(len(symbol.strokes[i].xs)):
-                symbol.strokes[i].xs[j] = (symbol.strokes[i].xs[j]-xmin) * w_percent + xmin
-                symbol.strokes[i].ys[j] = (symbol.strokes[i].ys[j]-ymin) * w_percent + ymin
+                symbol.strokes[i].xs[j] = ((symbol.strokes[i].xs[j]-xmin) * w_percent + xmin) + 1
+                symbol.strokes[i].ys[j] = ((symbol.strokes[i].ys[j]-ymin) * w_percent + ymin) + 1
+                #print ("In normalize: ", symbol.strokes[i].xs[j])
 
         newints = []
         for intr in symbol.intersections:
-            tmpx = (intr[0]-xmin * w_percent + xmin)
-            tmpy = (intr[1]-ymin * w_percent + ymin)
+            tmpx = (intr[0]-xmin * w_percent + xmin) + 0
+            tmpy = (intr[1]-ymin * w_percent + ymin) + 0
             newints.append((tmpx, tmpy))
         symbol.intersections = newints
 

@@ -47,6 +47,9 @@ def features(symbols):
 #       return I
 
 def getImg(symbol):
+    assert (len(symbol.xs()) != 0)
+    print ((round(max(symbol.xs()))+1,round(max(symbol.ys()))+1))
+    print (symbol.points())
     I = Image.new("L",(round(max(symbol.xs()))+1,round(max(symbol.ys()))+1))
     for stroke in symbol.strokes:
         p = stroke.asPoints()
@@ -89,8 +92,9 @@ def symbolFeatures(symbol):
 ##    f = NP.append(f,xvar(symbol))
 ##    f = NP.append(f,yvar(symbol))
     f = NP.append(f,getStatFeatures(symbol))
-    f = NP.append(f,getFuzzyLocalFeatures(symbol))
-    
+    f = NP.append(f,getFuzzyLocalFeatures(symbol, 7))
+    assert (not symbol.xs() is None)
+    assert (symbol.xs() != [])
 #    I = getImg(symbol)
 #    fkiFeat = getFKIfeatures(I)
 #    fki = getMeanStd(fkiFeat)
@@ -122,7 +126,7 @@ def aspratio(symbol):
     return [(symbol.ymax()-symbol.ymin()+1)/(symbol.xmax()-symbol.xmin()+1)]
     
 def numstrokes(symbol):
-    return[len(symbol.strokes)]
+    return[symbol.strokenum]
 
 # get number of intersections of strokes, in each symbol
 def numIntersections(symbol):
@@ -246,6 +250,72 @@ def getMeanStd(f):
     feat = NP.append(mean,std)
     return(feat)
     
+'''
+def getLocalFeatures(symbol, ndivs = 5):
+
+    xmin = symbol.xmin()
+    xmax = symbol.xmax()
+    ymin = symbol.ymin()
+    ymax = symbol.ymax()
+
+    width = xmax - xmin
+    height = ymax - ymin
+
+    xinc = width / (1.0 * ndivs + 1)
+    yinc = height / (1.0 * ndivs + 1)
+
+    rng = NP.array(range(0, ndivs +1))
+    xdivs = (rng + (xmin + 1)) * xinc
+    ydivs = (rng + (ymin + 1)) * yinc
+
+    #xdivs = [xmin + (i + 1) * xinc for i in range(0, ndivs)]
+    #ydivs = [ymin + (i + 1) * yinc for i in range(0, ndivs)]
+
+    def inRange(points, xmin, xmax, ymin, ymax):
+        results = []
+        for point in points:
+            if (point[0] >= xmin and point[0] <= xmax and point[1] >= ymin and point[1] <= ymax):
+                results.append(point)
+        return results
+
+    points = symbol.points()
+    intersections = symbol.intersections
+
+    regions = []
+
+    for ydiv in ydivs:
+        for xdiv in xdivs:
+            region = ((xdiv, ydiv), inRange(points, xdiv-xinc, xdiv + xinc, ydiv - yinc, ydiv + yinc), inRange(intersections, xdiv-xinc, xdiv + xinc, ydiv - yinc, ydiv + yinc))
+            regions.append (region)
+    cnt = len(points) * 1.0
+    f = NP.array([])
+    for region in regions:
+        center = NP.array(region[0])
+        points = NP.array(region[1])
+        intersections = NP.array(region[2])
+        
+        #fraction of total points in the region.
+        frac = len(points) / cnt
+       # print(points.mean(axis = 0))
+        if points.shape == (1,2):
+            means = list(points.mean(axis = 0))
+        else:
+            means = center #Seems most reasonable, I suppose.
+
+        numints = len(intersections)
+            
+        #put in some more here if we think of anything worth doing.
+        #Can't remember what all exactly they did,
+        #and don't feel like looking it up until the other stuff works
+        #and we know if we even need more features.
+
+        #Maybe a feature about average euclidean distance to center point
+        #might be good here?
+        
+        f = NP.append(f, frac)
+        f = NP.append(f, means)
+        f = NP.append(f, numints)
+    return f'''
 
 # sort of based of a paper I read. Not terribly efficient.
 # Needs some work, but is in fact a useful set of features.
@@ -262,7 +332,7 @@ def getFuzzyLocalFeatures(symbol, ndivs = 5):
     xinc = width / (1.0 * ndivs + 1)
     yinc = height / (1.0 * ndivs + 1)
 
-    rng = NP.array(range0, ndivs)
+    rng = NP.array(range(0, ndivs))
     xdivs = (rng + (xmin + 1)) * xinc
     ydivs = (rng + (ymin + 1)) * yinc
 
