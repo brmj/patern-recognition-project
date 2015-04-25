@@ -128,6 +128,10 @@ def numstrokes(symbol):
 def numIntersections(symbol):
     return [len(symbol.intersections)]
 
+# get number of bounding box intersections of strokes
+def numBoundingIntersections(symbol):
+    return [len(symbol.BoundingIntersect)]
+
 
 def getStatFeatures(symbol):
     pts = NP.asarray(symbol.points()).T
