@@ -32,7 +32,7 @@ class OneNN:
     
 def makeRF():
     #play with the options once we have a reasonable set of features to experiment with.
-    return sklearn.ensemble.RandomForestClassifier(n_estimators=20, n_jobs = -1, verbose=1)
+    return sklearn.ensemble.RandomForestClassifier(n_estimators=20, n_jobs = -1)
 
 def makeET():
     #play with the options once we have a reasonable set of features to experiment with.
@@ -101,6 +101,17 @@ def classifyExpression(expression, keys, model, pca, renormalize=True):
     f = (lambda p: keys[p])
     expression.classes = map (f, pred)
     return (NP.array(SymbolData.classNumbers(symbs, keys)), pred)
+
+def classifySymbol(symbol, model, pca, renormalize = True):
+    symbs = [symbol]
+    if renormalize:
+        symbs = SymbolData.normalize(symbs, 99)
+    f = Features.features(symbs)
+    if (pca != None):
+        f = pca.transform(f)
+    pred = model.predict(f)
+    return pred[0]
+
 
 """
 

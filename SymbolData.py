@@ -33,9 +33,19 @@ class Stroke:
         self.ys = []
         assert (not points is None)
         assert (len (points) == 0 or len(points[0]) == 2)
-        for point in self.rmcolinear(points):
+        #for point in self.rmcolinear(points):
+        for point in points:
             self.addPoint(point, flip)
+        if (len(points) == 0):
+            print("Warning: initializing empty stroke!")
+            self.addPoint((0,0), flip)
 
+    def withoutColinears(self): #awful hack.
+        return Stroke(self.rmcolinear(self.asPoints()))
+
+    def copy(self):
+        return Stroke(asPoints(), flip = False, ident = self.ident)
+            
     def plot(self, show = True, clear = True):
         if clear:
            PLT.clf()
@@ -141,7 +151,7 @@ class Stroke:
         self.n = 0
         self.rem = 0
         self.newpoints = [self.points[0]]
-        self.curdist = dists
+        self.curdist = self.dists[self.n]
         if(len(self.points) > 1):
             for i in range(0, divs + 1):
                 self.tempinc = self.inc
@@ -149,9 +159,10 @@ class Stroke:
                     self.tempinc -= self.curdist
                     self.n += 1
                     self.rem = 0
+                self.curdist = self.dists[self.n]
                 self.perc = (self.tempinc + self.rem) / float(self.curdist) #can't get a div 0 here, unless other things break.
                 self.rem += self.tempinc
-                self.curseg = self.segs[n]
+                self.curseg = self.segs[self.n]
                 self.p1 = self.curseg[0]
                 self.p2 = self.curseg[1]
                 self.xdist = self.p2[0] - self.p1[0]
@@ -162,14 +173,18 @@ class Stroke:
                 
                                                               
     def intersects(self, other):
+        self.cleaned = self.withoutColinears()
+        self.otherCleaned = other.withoutColinears()
         if self.couldIntersect(other):
-            return not find_intersect(self.xs, self.ys, other.xs, other.ys, first=True ) is None
+            return not find_intersect(self.cleaned.xs, self.cleaned.ys, self.otherCleaned.xs, self.otherCleaned.ys, first=True ) is None
         else:
             return False
         
     def intersections(self, other):
+        self.cleaned = self.withoutColinears()
+        self.otherCleaned = other.withoutColinears()
         if self.couldIntersect(other):
-            return list(map((lambda a: tuple(a)), find_intersect(self.xs, self.ys, other.xs, other.ys, first=False)))
+            return list(map((lambda a: tuple(a)), find_intersect(self.cleaned.xs, self.cleaned.ys, self.otherCleaned.xs, self.otherCleaned.ys, first=False)))
         else:
             return []
         
@@ -212,7 +227,10 @@ class Symbol:
         assert (strokes != [])
         assert (not strokes is None)
         self.ident = ident
-        self.intersections = intersections
+        if (intersections is None):
+            self.intersections = self.calcIntersections()
+        else:
+            self.intersections = intersections
         if norm:
             self.normalize()
         self.correctClass = correctClass
@@ -229,6 +247,9 @@ class Symbol:
             stroke.plot(show = False, clear = False)
         if show:
             PLT.show()
+
+    def totlen(self):
+        return reduce((lambda tot, strk: tot + strk.totlen()), self.strokes, 0)
    
     def xmin(self):
         return min(list(map( (lambda stroke: stroke.xmin()), self.strokes)))
@@ -250,6 +271,29 @@ class Symbol:
 
     def ys(self):
         return reduce( (lambda a, b : a + b), (list(map ((lambda f: f.ys), self.strokes))), [])
+
+
+    def calcIntersections(self, other = None):
+        self.newints = []
+        self.strokePairs = []
+        if (not other is None):
+            for stroke1 in self.strokes:
+                for stroke2 in other.strokes:
+                    self.strokePairs.append((stroke1, stroke2))
+        else:
+            self.l = len(self.strokes)
+            for i in range(0, self.l - 1):
+                self.stroke1 = self.strokes[i]
+                for j in range(i + 1, self.l):
+                    self.stroke2 = self.strokes[j]
+                    self.strokePairs.append((self.stroke1, self.stroke2))
+
+        for (stroke1, stroke2) in self.strokePairs:
+            self.newints = self.newints + stroke1.intersections(stroke2)
+        return self.newints
+             
+    def __str__(self):
+        return ("StrokeGroup " + str(list(map((lambda s: s.ident), self.strokes))))
     
     def normalize(self):
 
@@ -278,6 +322,10 @@ class Symbol:
 
     # Given a class, this produces lines for an lg file.
     def lgline(self, clss):
+        if (self.strokes is None or len(self.strokes) == 0):
+            return ""
+        if(self.ident is null):
+            self.ident = clss + '_' + self.strokes[0].ident #FIXME
         self.line = 'O, ' + self.ident + ', ' + clss + ', 1.0, ' + (', '.join(list(map((lambda s: str(s.ident)), self.strokes)))) + '\n'
         #do we need a newline here? Return to this if so.        
         return self.line
@@ -339,6 +387,7 @@ class Expression:
     
     def writeLG (self, directory, clss = None):
         self.filename = os.path.join(directory, (self.name + '.lg'))
+        print (self.filename)
         if (clss == None):
             #print ("none clss")
             assert (len (list(self.classes)) == len (list(self.symbols)))
@@ -361,6 +410,7 @@ class Expression:
             self.i = self.i + 1
 
         with (open (self.filename, 'w')) as f:
+            print ("Writing")
             
             for line in self.symblines:
                 f.write(line)
@@ -465,10 +515,10 @@ def readSymbol(root, tracegroup):
         idnt = str(strokeNums).replace(', ', '_')
     else:
         idnt = identAnnot.attrib['href'].replace(',', 'COMMA')
-        
-    sg = Segmentation.StrokeGroup(strokes, correctClass = truthText, norm=True, ident=idnt )
-    return sg.toSymbol()
 
+    #sg = Segmentation.StrokeGroup(strokes, correctClass = truthText, norm=True, ident=idnt )
+    #return sg.toSymbol()
+    return Symbol(strokes, correctClass=truthText, norm=True, ident=idnt )
     
     
 def readFile(filename, warn=False):
@@ -755,36 +805,23 @@ def unpickleSymbols(filename):
         return pickle.load(f)
 
 # Normalize the data such that x or y -> (0,99) and maintain the aspect ratio
-def normalize(symbols, scale):
-    basewidth = 100
-
+def normalize(symbols,scale):
     k=0
     for symbol in symbols:
         xmin = symbol.xmin()
         ymin = symbol.ymin()
-        xmax = symbol.xmax()
-        ymax = symbol.ymax()
-
-        width = xmax - xmin
-        #need to fix a division by 0 here.
-        if width == 0:
-            width = 1
-        w_percent = basewidth / float(width)
-
         for i in range(len(symbol.strokes)):
             for j in range(len(symbol.strokes[i].xs)):
-                symbol.strokes[i].xs[j] = ((symbol.strokes[i].xs[j]-xmin) * w_percent + xmin) + 1
-                symbol.strokes[i].ys[j] = ((symbol.strokes[i].ys[j]-ymin) * w_percent + ymin) + 1
-                #print ("In normalize: ", symbol.strokes[i].xs[j])
+                symbol.strokes[i].xs[j] = (symbol.strokes[i].xs[j]-xmin)*scale/2
+                symbol.strokes[i].ys[j] = (symbol.strokes[i].ys[j]-ymin)*scale/2
 
         newints = []
         for intr in symbol.intersections:
-            tmpx = (intr[0]-xmin * w_percent + xmin) + 0
-            tmpy = (intr[1]-ymin * w_percent + ymin) + 0
+            tmpx = (intr[0]-xmin) * scale / 2
+            tmpy = (intr[1]-ymin) * scale / 2
             newints.append((tmpx, tmpy))
         symbol.intersections = newints
-
+                
         symbols[k] = symbol
         k+=1    
     return(symbols)
-

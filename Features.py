@@ -89,6 +89,7 @@ def symbolFeatures(symbol):
     f = NP.append(f,aspratio(symbol))
     # append intersections feature
     f = NP.append(f,numIntersections(symbol))
+    f = NP.append(f,totlen(symbol))
 ##    f = NP.append(f,xvar(symbol))
 ##    f = NP.append(f,yvar(symbol))
     f = NP.append(f,getStatFeatures(symbol))
@@ -131,6 +132,10 @@ def numstrokes(symbol):
 # get number of intersections of strokes, in each symbol
 def numIntersections(symbol):
     return [len(symbol.intersections)]
+
+def totlen(symbol):
+    assert(symbol.totlen() != None)
+    return [symbol.totlen()]
 
 
 def getStatFeatures(symbol):
@@ -249,7 +254,12 @@ def getMeanStd(f):
     std = NP.std(f, axis=0)
     feat = NP.append(mean,std)
     return(feat)
-    
+
+#def getRangeFeatures(f, div = 5):
+#    assert(len(a) >= div)
+#    l = len(a)
+#    bounds = 
+
 '''
 def getLocalFeatures(symbol, ndivs = 5):
 

@@ -6,6 +6,7 @@ import matplotlib.pyplot as PLT
 import itertools
 import functools
 import SymbolData
+import Classification
 from functools import reduce
 
 
@@ -14,6 +15,7 @@ class StrokeGroup:
     """ Holds a set of strokes with no normalization or scaling. Used in segmentation. """
     def __init__(self, strokes, intersections = None, correctClass = None, norm = True, ident = None):
         self.strokes = strokes
+        assert(strokes != [] and not strokes is None)
         if intersections is None:
             self.intersections = self.calcIntersections()
         else:
@@ -26,8 +28,8 @@ class StrokeGroup:
         #let's see how it goes... Should still add stuff to deal with _almost_ colinear points, _almost_ identical, etc.
         #self.resample()
         self.strokenum = len(self.strokes)
-        if(self.norm):
-            self.uniformResample(28) #a good start, since the prof suggested 30.
+        #if(self.norm):
+        #self.uniformResample(28) #a good start, since the prof suggested 30.
             
     def toSymbol(self):
         self.newstrokes = self.strokes
@@ -45,6 +47,9 @@ class StrokeGroup:
         if show:
             PLT.show()
 
+    def copy(self):
+        return StrokeGroup(list(map ((lambda s: s.copy()), self.strokes)), intersections = self.intersections, correctClass = self.correctClass, norm = self.norm, ident = self.iden)
+            
     def merge(self, other, inPlace = True):
         self.newInts = set(self.intersections).union(set(other.intersections)).union(set(self.calcIntersections(other)))
         if inPlace:
@@ -56,7 +61,7 @@ class StrokeGroup:
 
     def uniformResample(self, divs):
         self.newident =  str(list(map((lambda s: s.ident), self.strokes)))
-        self.newstroke = SymbolData.Stroke(reduce ((lambda a, b: a + b.points), self.strokes, []), ident = self.newident)
+        self.newstroke = SymbolData.Stroke(reduce ((lambda a, b: a + b.asPoints()), self.strokes, []), ident = self.newident)
         self.newstroke.uniformResample(divs)
         self.strokes = [self.newstroke]
         
@@ -208,6 +213,63 @@ def intersection_partition(strokes, name = None, relations = None):
     part.mergeIntersecting()
     return part
 
+def mkClassiffyPairMergeFun(model, pca, renormalize = True):
+    def isTwoPart (cls):
+        return cls in SymbolData.twoGroup
+    def makesymb(sgs):
+        return reduce((lambda sg1, sg2: sg1.merge(sg2, inPlace=False)), list(map((lambda sg: sg.copy()),sgs)))
+    def twoPartSymb(symb):
+        cls = Classification.classifySymbol(symb, model, pca, renormalize)
+        return isTwoPart(cls)
+    mergeFun = (lambda sgs: twoPartSymb(makesymb(sgs)))
+    return mergeFun
+
+def mkIsThreeGroupMergeFun(model, pca, renormalize = True):
+    def isThreePart (clss):
+        if (len(clss) != 3):
+            return False
+        if ((SymbolData.defaultClasses[clss[0]] == 's' or SymbolData.defaultClasses[clss[0]] == 'S') and
+            (SymbolData.defaultClasses[clss[1]] == 'i' or SymbolData.defaultClasses[clss[1]] == 'I'
+             or SymbolData.defaultClasses[clss[1]] == '|' or (SymbolData.defaultClasses[clss[1]] == '1')) and
+            (SymbolData.defaultClasses[clss[2]] == 'n' or SymbolData.defaultClasses[clss[2]] == 'N')):
+            return True
+        if ((SymbolData.defaultClasses[clss[0]] == 'c' or SymbolData.defaultClasses[clss[0]] == 'C'
+             or SymbolData.defaultClasses[clss[0]] == '(') and
+            (SymbolData.defaultClasses[clss[1]] == 'o' or SymbolData.defaultClasses[clss[1]] == 'O'
+             or SymbolData.defaultClasses[clss[1]] == '0') and
+            (SymbolData.defaultClasses[clss[2]] == 's' or SymbolData.defaultClasses[clss[2]] == 'S')):
+            return True
+        if ((SymbolData.defaultClasses[clss[0]] == 't' or SymbolData.defaultClasses[clss[0]] == 'T'
+             or (SymbolData.defaultClasses[clss[0]] == '+')) and
+            (SymbolData.defaultClasses[clss[1]] == 'a' or SymbolData.defaultClasses[clss[1]] == 'A') and
+            (SymbolData.defaultClasses[clss[2]] == 'n' or SymbolData.defaultClasses[clss[2]] == 'N')):
+            return True
+        if ((SymbolData.defaultClasses[clss[0]] == 'l' or SymbolData.defaultClasses[clss[0]] == 'L') and
+            (SymbolData.defaultClasses[clss[1]] == 'i' or SymbolData.defaultClasses[clss[1]] == 'I'
+             or SymbolData.defaultClasses[clss[1]] == '|' or (SymbolData.defaultClasses[clss[1]] == '1')) and
+            (SymbolData.defaultClasses[clss[2]] == 'm' or SymbolData.defaultClasses[clss[2]] == 'M')):
+            return True
+        if ((SymbolData.defaultClasses[clss[0]] == 'd' or SymbolData.defaultClasses[clss[0]] == 'D') and
+            (SymbolData.defaultClasses[clss[1]] == 'i' or SymbolData.defaultClasses[clss[1]] == 'I'
+             or SymbolData.defaultClasses[clss[1]] == '|' or (SymbolData.defaultClasses[clss[1]] == '1')) and
+            (SymbolData.defaultClasses[clss[2]] == 'V' or SymbolData.defaultClasses[clss[2]] == 'v')):
+            return True
+        if ((SymbolData.defaultClasses[clss[0]] == 'l' or SymbolData.defaultClasses[clss[0]] == 'L'
+             or SymbolData.defaultClasses[clss[0]] == '(') and
+            (SymbolData.defaultClasses[clss[1]] == 'o' or SymbolData.defaultClasses[clss[1]] == 'O'
+             or SymbolData.defaultClasses[clss[1]] == '0') and
+            (SymbolData.defaultClasses[clss[2]] == 'g' or SymbolData.defaultClasses[clss[2]] == 'G')):
+            return True
+        return False
+    
+    def makesymb(sgs):
+        return reduce((lambda sg1, sg2: sg1.merge(sg2, inPlace=False)), list(map((lambda sg: sg.copy()),sgs)))
+    def twoPartSymb(symb):
+        clss = Classification.classifySymbol(symb, model, pca, renormalize)
+        return isTwoPart(clss)
+    mergeFun = (lambda sgs: isThreePart(makesymb(sgs)))
+    return mergeFun
+
 def mergePaired(mergefun, part):
     if len(part.strokeGroups) > 1:
             newGroups = []
@@ -259,3 +321,14 @@ def mergeTripled(mergeFun, part):
         return Partition(newGroups, part.name, part.relations)
     else:
         return part
+
+def mkCleverPart(model, pca, renormalize = True, name = None, relations = None):
+    def cleverPart(strokes):
+        part = intersection_partition(strokes, name = None, relations = None)
+        merge2fun = mkClassiffyPairMergeFun(model, pca, renormalize)
+        part2 = mergePaired(merge2fun, part)
+        merge3fun = mkIsThreeGroupMergeFun(model, pca, renormalize)
+        part3 = mergeTripled(merge3fun, part2)
+        return part3
+
+    return (lambda strokes: cleverPart(strokes))
