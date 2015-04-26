@@ -29,10 +29,10 @@ class OneNN:
         self.dists = NP.sqrt(self.sums)
         self.idx = NP.argmin(self.dists)
         return self.classes[self.idx]
-
+    
 def makeRF():
     #play with the options once we have a reasonable set of features to experiment with.
-    return sklearn.ensemble.RandomForestClassifier(n_estimators=30, max_depth = 3, n_jobs = -1, verbose=1)
+    return sklearn.ensemble.RandomForestClassifier(n_estimators=20, n_jobs = -1)
 
 def makeET():
     #play with the options once we have a reasonable set of features to experiment with.
@@ -43,7 +43,7 @@ def train(model, training, keys, pca_num=None):
         model = OneNN()
     elif model == "rf":
         model = makeRF()
-    #training = SymbolData.normalize(training, 99)
+    training = SymbolData.normalize(training, 99)
     f = Features.features(training)
     pca = None
     if (pca_num != None):
@@ -88,8 +88,8 @@ def classifyExpressions(expressions, keys, model, pca, renormalize=True, showAcc
     
 def classifyExpression(expression, keys, model, pca, renormalize=True):
     symbs = expression.symbols
-    #if renormalize:
-        #symbs = SymbolData.normalize(symbs, 99)
+    if renormalize:
+        symbs = SymbolData.normalize(symbs, 99)
     f = Features.features(symbs)
     if (len (symbs) == 0):
         print(expression.name, " has no valid symbols!")
@@ -101,6 +101,17 @@ def classifyExpression(expression, keys, model, pca, renormalize=True):
     f = (lambda p: keys[p])
     expression.classes = map (f, pred)
     return (NP.array(SymbolData.classNumbers(symbs, keys)), pred)
+
+def classifySymbol(symbol, model, pca, renormalize = True):
+    symbs = [symbol]
+    if renormalize:
+        symbs = SymbolData.normalize(symbs, 99)
+    f = Features.features(symbs)
+    if (pca != None):
+        f = pca.transform(f)
+    pred = model.predict(f)
+    return pred[0]
+
 
 """
 
