@@ -26,8 +26,10 @@ def main(argv=None):
         with open(argv[0], 'rb') as f:
             model, pca, keys =  pickle.load(f)
 
-
+        print ("Segmenting")
         cleverpart = Segmentation.mkCleverPart(model, pca)
+        #exprs = SymbolData.readAndSegmentDirectory(argv[2],  Segmentation.intersection_partition)
+        #exprs = SymbolData.readAndSegmentDirectory(argv[2],  Segmentation.stupid_partition)
         exprs = SymbolData.readAndSegmentDirectory(argv[2], cleverpart)
         #exprs = SymbolData.readInkmlDirectory(argv[2], argv[3])
 

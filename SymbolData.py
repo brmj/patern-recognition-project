@@ -44,7 +44,7 @@ class Stroke:
         return Stroke(self.rmcolinear(self.asPoints()))
 
     def copy(self):
-        return Stroke(asPoints(), flip = False, ident = self.ident)
+        return Stroke(self.asPoints(), flip = False, ident = self.ident)
             
     def plot(self, show = True, clear = True):
         if clear:
@@ -324,8 +324,8 @@ class Symbol:
     def lgline(self, clss):
         if (self.strokes is None or len(self.strokes) == 0):
             return ""
-        if(self.ident is null):
-            self.ident = clss + '_' + self.strokes[0].ident #FIXME
+        if(self.ident is None):
+            self.ident = str(clss) + '_' + str(self.strokes[0].ident) #FIXME
         self.line = 'O, ' + self.ident + ', ' + clss + ', 1.0, ' + (', '.join(list(map((lambda s: str(s.ident)), self.strokes)))) + '\n'
         #do we need a newline here? Return to this if so.        
         return self.line
@@ -386,7 +386,7 @@ class Expression:
             
     
     def writeLG (self, directory, clss = None):
-        self.filename = os.path.join(directory, (self.name + '.lg'))
+        self.filename = os.path.join(directory, (os.path.basename(self.name) + '.lg'))
         print (self.filename)
         if (clss == None):
             #print ("none clss")

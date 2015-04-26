@@ -19,7 +19,7 @@ class StrokeGroup:
         if intersections is None:
             self.intersections = self.calcIntersections()
         else:
-            self.intesections = intersections
+            self.intersections = intersections
 
         self.correctClass = correctClass
         self.norm = norm
@@ -48,7 +48,7 @@ class StrokeGroup:
             PLT.show()
 
     def copy(self):
-        return StrokeGroup(list(map ((lambda s: s.copy()), self.strokes)), intersections = self.intersections, correctClass = self.correctClass, norm = self.norm, ident = self.iden)
+        return StrokeGroup(list(map ((lambda s: s.copy()), self.strokes)), intersections = self.intersections, correctClass = self.correctClass, norm = self.norm, ident = self.ident)
             
     def merge(self, other, inPlace = True):
         self.newInts = set(self.intersections).union(set(other.intersections)).union(set(self.calcIntersections(other)))
@@ -277,7 +277,7 @@ def mergePaired(mergefun, part):
             current = part.strokeGroups[0]
             while i < len(part.strokeGroups):
                 #for the moment, go with a simplistic greedy approach.
-                if mergefun(current, part.strokeGroups[i]):
+                if mergefun([current, part.strokeGroups[i]]):
                     newGroups.append(current.merge(part.strokeGroups[i]))
                     if i +1 < len (part.strokeGroups):
                         current = part.strokeGroups [i + 1]
@@ -302,7 +302,8 @@ def mergeTripled(mergeFun, part):
         current = part.strokeGroups[0]
         while i < len(part.strokeGroups):
             #for the moment, go with a simplistic greedy approach.
-            if mergefun(current, part.strokeGroups[i-1], part.strokeGroups[i]):
+
+            if mergefun([current, part.strokeGroups[i-1], part.strokeGroups[i]]):
                 newGroups.append(current.merge(part.strokeGroups[i-1]).merge(part.strokeGroups[i]))
                 if i +1 < len (part.strokeGroups):
                     current = part.strokeGroups [i + 1]

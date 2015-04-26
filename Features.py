@@ -134,7 +134,7 @@ def numIntersections(symbol):
     return [len(symbol.intersections)]
 
 def totlen(symbol):
-    assert(symbol.totlen() != None)
+    assert(not(symbol.totlen() is None and len(symbol.points()) >1))
     return [symbol.totlen()]
 
 
