@@ -19,7 +19,7 @@ class StrokeGroup:
         if intersections is None:
             self.intersections = self.calcIntersections()
         else:
-            self.intesections = intersections
+            self.intersections = intersections
 
         self.correctClass = correctClass
         self.norm = norm
@@ -48,7 +48,7 @@ class StrokeGroup:
             PLT.show()
 
     def copy(self):
-        return StrokeGroup(list(map ((lambda s: s.copy()), self.strokes)), intersections = self.intersections, correctClass = self.correctClass, norm = self.norm, ident = self.iden)
+        return StrokeGroup(list(map ((lambda s: s.copy()), self.strokes)), intersections = self.intersections, correctClass = self.correctClass, norm = self.norm, ident = self.ident)
             
     def merge(self, other, inPlace = True):
         self.newInts = set(self.intersections).union(set(other.intersections)).union(set(self.calcIntersections(other)))
@@ -162,6 +162,7 @@ class Partition:
         return None
 
     def mergeIntersecting(self):
+        self.idents = self.strokeIdents()
         if len(self.strokeGroups) > 1:
             self.newGroups = []
             self.i = 1
@@ -175,7 +176,8 @@ class Partition:
                 self.i+=1
             self.newGroups.append(self.current)
             self.strokeGroups = self.newGroups
-                        
+        assert (self.strokeIdents() == self.idents)x
+        
 
             
 def comparePartitions(part1, part2, warn = False):
@@ -217,7 +219,7 @@ def mkClassiffyPairMergeFun(model, pca, renormalize = True):
     def isTwoPart (cls):
         return cls in SymbolData.twoGroup
     def makesymb(sgs):
-        return reduce((lambda sg1, sg2: sg1.merge(sg2, inPlace=False)), list(map((lambda sg: sg.copy()),sgs)))
+        return (reduce((lambda sg1, sg2: sg1.merge(sg2, inPlace=False)), list(map((lambda sg: sg.copy()),sgs)))).toSymbol()
     def twoPartSymb(symb):
         cls = Classification.classifySymbol(symb, model, pca, renormalize)
         return isTwoPart(cls)
@@ -263,7 +265,7 @@ def mkIsThreeGroupMergeFun(model, pca, renormalize = True):
         return False
     
     def makesymb(sgs):
-        return reduce((lambda sg1, sg2: sg1.merge(sg2, inPlace=False)), list(map((lambda sg: sg.copy()),sgs)))
+        return (reduce((lambda sg1, sg2: sg1.merge(sg2, inPlace=False)), list(map((lambda sg: sg.copy()),sgs)))).toSymbol()
     def twoPartSymb(symb):
         clss = Classification.classifySymbol(symb, model, pca, renormalize)
         return isTwoPart(clss)
@@ -277,7 +279,7 @@ def mergePaired(mergefun, part):
             current = part.strokeGroups[0]
             while i < len(part.strokeGroups):
                 #for the moment, go with a simplistic greedy approach.
-                if mergefun(current, part.strokeGroups[i]):
+                if mergefun([current, part.strokeGroups[i]]):
                     newGroups.append(current.merge(part.strokeGroups[i]))
                     if i +1 < len (part.strokeGroups):
                         current = part.strokeGroups [i + 1]
@@ -302,7 +304,8 @@ def mergeTripled(mergeFun, part):
         current = part.strokeGroups[0]
         while i < len(part.strokeGroups):
             #for the moment, go with a simplistic greedy approach.
-            if mergefun(current, part.strokeGroups[i-1], part.strokeGroups[i]):
+
+            if mergefun([current, part.strokeGroups[i-1], part.strokeGroups[i]]):
                 newGroups.append(current.merge(part.strokeGroups[i-1]).merge(part.strokeGroups[i]))
                 if i +1 < len (part.strokeGroups):
                     current = part.strokeGroups [i + 1]
