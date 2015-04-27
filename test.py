@@ -24,13 +24,13 @@ def main(argv=None):
         
         #model, pca = joblib.load(argv[1]) 
         with open(argv[0], 'rb') as f:
-            model, pca, keys =  pickle.load(f)
+            model, pca, keys, seg =  pickle.load(f)
 
         print ("Segmenting")
         cleverpart = Segmentation.mkCleverPart(model, pca)
-        #exprs = SymbolData.readAndSegmentDirectory(argv[2],  Segmentation.intersection_partition)
+        exprs = SymbolData.readAndSegmentDirectory(argv[2],  Segmentation.intersection_partition)
         #exprs = SymbolData.readAndSegmentDirectory(argv[2],  Segmentation.stupid_partition)
-        exprs = SymbolData.readAndSegmentDirectory(argv[2], cleverpart)
+        #exprs = SymbolData.readAndSegmentDirectory(argv[2], cleverpart)
         #exprs = SymbolData.readInkmlDirectory(argv[2], argv[3])
 
         #the following is a placeholder until I am sure we have propper analysis tools for evaluating our results if we preserve files.

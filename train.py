@@ -46,9 +46,10 @@ def main(argv=None):
             print( "Accuracy on training set : ", accuracy_score(SymbolData.classNumbers(symbs, keys), pred))
 
 
+        seg = []
         #joblib.dump((trained, pca), argv[2])    
         with open(argv[1], 'wb') as f:
-            pickle.dump((trained, pca, keys), f, pickle.HIGHEST_PROTOCOL)
+            pickle.dump((trained, pca, keys, seg), f, pickle.HIGHEST_PROTOCOL)
 
 if __name__ == "__main__":
     sys.exit(main())
