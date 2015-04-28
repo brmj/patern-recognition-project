@@ -74,6 +74,9 @@ class StrokeGroup:
     def lens(self):
         return (list(map((lambda s: s.totlen()), self.strokes)))
 
+    def strokenum(self):
+        return len(self.strokes)
+
     def totlen(self):
         return NP.sum(self.lens())
     
