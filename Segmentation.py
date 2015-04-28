@@ -27,7 +27,7 @@ class StrokeGroup:
 
         #let's see how it goes... Should still add stuff to deal with _almost_ colinear points, _almost_ identical, etc.
         #self.resample()
-        self.strokenum = len(self.strokes)
+        # self.strokenum = len(self.strokes)
         #if(self.norm):
         #self.uniformResample(28) #a good start, since the prof suggested 30.
             
