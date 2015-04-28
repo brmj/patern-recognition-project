@@ -176,9 +176,21 @@ class Partition:
                 self.i+=1
             self.newGroups.append(self.current)
             self.strokeGroups = self.newGroups
-        assert (self.strokeIdents() == self.idents)x
+        assert (self.strokeIdents() == self.idents)
         
 
+def readAndSegment(filename, segfun, warn = False, raw = False):
+    strokes = SymbolData.readFileStrokes(filename, warn)
+    partition = segfun(strokes)
+    name, ext = os.path.splitext(filename)
+    if raw:
+        return partition
+    else:
+        return SymbolData.Expression(name, partition.toSymbols(), None)
+        
+def readAndSegmentDirectory(filename, segfun, warn=False, raw = False):
+    fnames = filenames(filename)
+    return list(map((lambda f: readAndSegment(f, segfun, warn, raw)), fnames))
             
 def comparePartitions(part1, part2, warn = False):
     correct = 0
@@ -198,6 +210,7 @@ def comparePartitions(part1, part2, warn = False):
 
     return [correct, total]
 
+
 def comparePartitionsLists(l1, l2, warn = False):
     results = NP.array(list(map((lambda ps: comparePartitions(ps[0], ps[1], warn)), zip(l1, l2))))
     sums = results.sum(axis = 0)
@@ -205,6 +218,65 @@ def comparePartitionsLists(l1, l2, warn = False):
     perc = sums[0] / sums[1]
     return perc
 
+def testSegmentation(filename, lgdir, segfun, warn = False):
+    exprs = SymbolData.readInkmlDirectory(filename, lgdir, warn)
+    parts = readAndSegmentDirectory(filename, segfun, warn, raw = True)
+    segrate = comparePartitionsLists(parts, exprs)
+    print (segrate)
+    return segrate
+
+def true_partition():
+    return "foo"
+
+
+
+def readTrueSG(root, tracegroup):
+    truthAnnot = tracegroup.find(".//{http://www.w3.org/2003/InkML}annotation[@type='truth']")
+    identAnnot = tracegroup.find(".//{http://www.w3.org/2003/InkML}annotationXML")    
+    strokeElems = tracegroup.findall('.//{http://www.w3.org/2003/InkML}traceView')
+    assert( len(strokeElems) != 0)
+    strokeNums = list(map( (lambda e: int(e.attrib['traceDataRef'])), strokeElems)) #ensure that all these are really ints if we have trouble.
+    strokes = list(map( (lambda n: SymbolData.readStroke(root, n)), strokeNums))
+    if (truthAnnot == None):
+        truthText = None
+    else:
+        truthText = SymbolData.doTruthSubs(truthAnnot.text)
+    if identAnnot == None:
+            #what do we even do with this?
+            #messing with lg files depends on it.
+            #for the momment, give it a bogus name and continue.
+        idnt = str(strokeNums).replace(', ', '_')
+    else:
+        idnt = identAnnot.attrib['href'].replace(',', 'COMMA')
+
+    sg = StrokeGroup(strokes, correctClass = truthText, norm=True, ident=idnt )
+    return sg
+    
+def readTrueSGsFile(filename, warn=False):
+    tree = None
+    try:
+        #print (filename)
+        tree = ET.parse(filename)
+    except:
+        if warn:
+            print("warning: unparsable file.")
+        return []
+    root = tree.getroot()
+    tracegroups = root.findall('./*/{http://www.w3.org/2003/InkML}traceGroup')
+    sgs = list(map((lambda t: readTrueSG(root, t)), tracegroups))
+    return sgs
+
+def readTrueSGsDirectory(filename, warn=False):
+    fnames = SymbolData.filenames(filename)
+    return reduce( (lambda a, b : a + b), (list(map ((lambda f: readTrueSGsFile(f, warn)), fnames))), [])
+
+def readTruePart(filename, warn=False):
+    sgs = readTrueSGsFile(filename, warn)
+    return Partition(sgs)
+
+def readTruePartsDirectory(filename, warn=False):
+    fnames = SymbolData.filenames(filename)
+    return list(map((lambda f: readTruePart(f, lgdir, warn)), fnames))
 
 def stupid_partition(strokes, name = None, relations = None):
     sgs = list(map((lambda s: StrokeGroup([s])), strokes))

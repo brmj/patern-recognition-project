@@ -28,7 +28,7 @@ def main(argv=None):
 
         print ("Segmenting")
         cleverpart = Segmentation.mkCleverPart(model, pca)
-        exprs = SymbolData.readAndSegmentDirectory(argv[2],  Segmentation.intersection_partition)
+        exprs = Segmentation.readAndSegmentDirectory(argv[2],  Segmentation.intersection_partition)
         #exprs = SymbolData.readAndSegmentDirectory(argv[2],  Segmentation.stupid_partition)
         #exprs = SymbolData.readAndSegmentDirectory(argv[2], cleverpart)
         #exprs = SymbolData.readInkmlDirectory(argv[2], argv[3])
