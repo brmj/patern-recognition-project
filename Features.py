@@ -133,6 +133,9 @@ def numstrokes(symbol):
 def numIntersections(symbol):
     return [len(symbol.intersections)]
 
+# get number of bounding box intersections of strokes
+def numBoundingIntersections(symbol):
+    return [len(symbol.BoundingIntersect)]
 def totlen(symbol):
     assert(not(symbol.totlen() is None and len(symbol.points()) >1))
     return [symbol.totlen()]

@@ -191,6 +191,10 @@ class Stroke:
     def couldIntersect(self, other):
         return (not (self.xmin() > other.xmax() or other.xmin() > self.xmax() or self.ymin() > other.ymax() or other.ymin() > self.ymax()))
 
+    # count intersections between strokes bounding box
+    def BoundingIntersect(self, other):
+        return 
+
     def scale(self, xmin, xmax, ymin, ymax, xscale, yscale):
         if (xmax != xmin):
             self.xs = list(map( (lambda x: xscale * ((x - xmin) * 1.0 / (xmax - xmin))), self.xs))
@@ -214,6 +218,18 @@ class Stroke:
 
     def ymax(self):
         return max(self.ys)
+
+    # define bounding box for each stroke
+    # coordinates are in counter-clockwise direction
+    def boundingbox_rectangle(self):
+        # upper_left = (xmin, ymax)
+        # lower_left = (xmin, ymin)
+        # lower_right = (xmax, ymin)
+        # upper_right = (xmax, ymax)
+        width = xmax - xmin
+        height = ymax - ymin
+        center = ((xmin+xmax)/2, (ymin+ymax)/2)
+        return NP.array(center, width, height)
         
     def __str__(self):
         return 'Stroke:\n' + str(self.asPoints())
@@ -333,7 +349,8 @@ class Symbol:
     def rename(self, clss, cnt):
         self.ident = clss + "_" + str(cnt)
 
-        
+
+
     def __str__(self):
         self.strng = 'Symbol'
         if self.correctClass != '':
@@ -473,9 +490,18 @@ def find_intersect(x_down, y_down, x_up, y_up, first=True):
     else:
         return crossings
 
+# methods to find if two strokes have bounding box intersection
+def stroke_boundingbox_intersection(stroke1, stroke2):
+    (center, width, height) = stroke1.boundingbox_rectangle(stroke1)
+    (center, width, height) = stroke1.boundingbox_rectangle(stroke2)
 
+    r12_x = NP.absolute(stroke1.xmin + stroke1.xmax - stroke2.xmin - stroke2.xmax)
+    r12_y = NP.absolute(stroke1.ymin + stroke1.ymax - stroke2.ymin - stroke2.ymax)
 
-    
+    if (r12_x <= (stroke1.width + stroke2.width)) and (r12_y <= (stroke1.height + stroke2.height)):
+        return True
+    else:
+        return False    
 
 # This stuff is used for reading strokes and symbols from files.
 

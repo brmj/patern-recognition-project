@@ -12,23 +12,25 @@ import pickle
 # This is a skeleton of a file that will contain functions for various features.
 
 def features(strokeGroupPairs):
-    return list(map ( (lambda sgpair: sgPairFeatures(sgpair)), strokeGroupPairs))
+    return list(map ( (lambda sgpair: sgPairFeatures(sgpair)), strokeGroupPairs) )
 
 # Get the features from a symbol
 def sgPairFeatures(sgPair):
     sg1, sg2 = sgpair
-    symb1 =sg1.toSymbol()
+    symb1 = sg1.toSymbol()
     symb2 = sg2.toSymbol()
     f = NP.array([])
     
     #Call feature functions here like so:
-    f = NP.append(f,xmean(symbol))
-    f = NP.append(f,ymean(symbol))
-    f = NP.append(f,numstrokes(symbol))    
-   
-    f = NP.append(f,totlen(symbol))
-
-    f = NP.append(f,getStatFeatures(symbol))
+    f = NP.append(f, xmeanDist(symb1, symb2))
+    f = NP.append(f, ymeanDist(symb1, symb2))
+    f = NP.append(f, numstrokes(symb1, symb2))
+    # f = NP.append(f, totlen(symbol))
+    f = NP.append(f, width_ratio(symb1, symb2))
+    f = NP.append(f, height_ratio(symb1, symb2))
+    f = NP.append(f, horizontal_bounding_distance(symb1, symb2))    
+    f = NP.append(f, getStatFeatures(symb1))
+    f = NP.append(f, getStatFeatures(symb2))
     
     #the minimum, basic scaling needed for many classifiers to work corectly.
     f_scaled = preprocessing.scale(f)
@@ -37,21 +39,35 @@ def sgPairFeatures(sgPair):
 
 # Some really simple global properties to start us off.
     
-def xmeanDist(sgPair):
-    return [NP.mean(symbol.xs())]
+def xmeanDist(sg1, sg2):
+    return [NP.mean(sg1.xs())] - [NP.mean(sg2.xs())]
 
-def ymean(symbol):
-    return [NP.mean(symbol.ys())]
+def ymeanDist(sg1, sg2):
+    return [NP.mean(sg1.ys())] - [NP.mean(sg2.ys())]
 
+# def numstrokes(sg1, sg2):
+#     return [sg1.strokenum] + [sg2.strokenum]
 
-    
-def numstrokes(symbol):
-    return[symbol.strokenum]
+def totlen(sg1, sg2):
+    for sg in [sg1, sg2]:
+        assert (not(sg.totlen() is None and len(sg.points()) >1))
+    return [sg1.totlen()] + [sg2.totlen()]
 
-def totlen(symbol):
-    assert(not(symbol.totlen() is None and len(symbol.points()) >1))
-    return [symbol.totlen()]
+def width_ratio(sg1, sg2):
+    width1 = sg1.xmax - sg1.xmin
+    width2 = sg2.xmax - sg2.xmin
+    return NP.divide(width1, width2)
 
+def height_ratio(sg1, sg2):
+    height1 = sg1.ymax - sg1.ymin
+    height2 = sg2.ymax - sg2.ymin
+    return NP.divide(height1, height2)
+
+def horizontal_bounding_distance(sg1, sg2):
+    width1 = sg1.xmax - sg1.xmin
+    width2 = sg2.xmax - sg2.xmin
+    r12_x = NP.absolute(sg1.xmin + sg1.xmax - sg2.xmin - sg2.xmax)
+    return NP.divide(r12_x, (width1 + width2))
 
 def getStatFeatures(symbol):
     pts = NP.asarray(symbol.points()).T

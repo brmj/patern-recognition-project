@@ -74,7 +74,8 @@ class StrokeGroup:
     def lens(self):
         return (list(map((lambda s: s.totlen()), self.strokes)))
 
-    def totlen(self): NP.sum(self.lens())
+    def totlen(self):
+        return NP.sum(self.lens())
     
     def resample(self):
         self.md = self.minDist()
