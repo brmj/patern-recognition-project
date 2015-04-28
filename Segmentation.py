@@ -79,7 +79,7 @@ class StrokeGroup:
     
     def resample(self):
         self.md = self.minDist()
-        map ((lambda s: s.resample(self.md)), self.strokes)
+        return (list(map((lambda s: s.resample(self.md)), self.strokes)))
         
     def xmin(self):
         return min(list(map( (lambda stroke: stroke.xmin()), self.strokes)))
