@@ -51,7 +51,7 @@ def numstrokes(symb1, symb2):
 def totlen(symb1, symb2):
     for symb in [symb1, symb2]:
         assert (not(symb.totlen() is None and len(symb.points()) >1))
-    return [symb1.totlen()] + [symb2.strokenum]
+    return [symb1.totlen()] + [symb2.totlen()]
 
 def width_ratio(symb1, symb2):
     width1 = symb1.xmax - symb1.xmin
