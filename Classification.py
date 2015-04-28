@@ -113,13 +113,13 @@ def classifySymbol(symbol, model, pca, renormalize = True):
     return pred[0]
 
 
-"""
+def makeSegRF():
+    #play with the options once we have a reasonable set of features to experiment with.
+    return sklearn.ensemble.RandomForestClassifier(n_estimators=50, n_jobs = -1)
 
-
-symbols = SymbolData.unpickleSymbols("train.dat")
-symbols = SymbolData.normalize(symbols,99)
-
-Features.showImg(symbols[3])
-
-f = Features.features(symbols[0:2])
- """
+def classifySGPairs(sgPairs, model, pca):
+    f = SegFeatures.features(sgPairs)
+    if (pca != None):
+        f = pca.transform(f)
+    pred = model.predict_proba(sgPairs)
+    return pred
