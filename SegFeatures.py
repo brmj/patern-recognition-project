@@ -39,35 +39,35 @@ def sgPairFeatures(sgPair):
 
 # Some really simple global properties to start us off.
     
-def xmeanDist(symb1, symb2):
-    return [NP.mean(symb1.xs())]-[NP.mean(symb2.xs())]
+def xmeanDist(sg1, sg2):
+    return [NP.mean(sg1.xs())] - [NP.mean(sg2.xs())]
 
-def ymeanDist(symb1, symb2):
-    return [NP.mean(symb1.ys())]-[NP.mean(symb2.ys())]
+def ymeanDist(sg1, sg2):
+    return [NP.mean(sg1.ys())] - [NP.mean(sg2.ys())]
 
-def numstrokes(symb1, symb2):
-    return [symb1.strokenum] + [symb2.strokenum]
+# def numstrokes(sg1, sg2):
+#     return [sg1.strokenum] + [sg2.strokenum]
 
-def totlen(symb1, symb2):
-    for symb in [symb1, symb2]:
-        assert (not(symb.totlen() is None and len(symb.points()) >1))
-    return [symb1.totlen()] + [symb2.totlen()]
+def totlen(sg1, sg2):
+    for sg in [sg1, sg2]:
+        assert (not(sg.totlen() is None and len(sg.points()) >1))
+    return [sg1.totlen()] + [sg2.totlen()]
 
-def width_ratio(symb1, symb2):
-    width1 = symb1.xmax - symb1.xmin
-    width2 = symb2.xmax - symb2.xmin
+def width_ratio(sg1, sg2):
+    width1 = sg1.xmax - sg1.xmin
+    width2 = sg2.xmax - sg2.xmin
     return NP.divide(width1, width2)
 
-def height_ratio(symb1, symb2):
-    height1 = symb1.ymax - symb1.ymin
-    height2 = symb2.ymax - symb2.ymin
+def height_ratio(sg1, sg2):
+    height1 = sg1.ymax - sg1.ymin
+    height2 = sg2.ymax - sg2.ymin
     return NP.divide(height1, height2)
 
-def horizontal_bounding_distance(symb1, symb2):
-    width1 = symb1.xmax - symb1.xmin
-    width2 = symb2.xmax - symb2.xmin
-    r12_x = NP.absolute(symb1.xmin + symb1.xmax - symb2.xmin - symb2.xmax)
-    return NP.divide(r12_x, (symb1.width + symb2.width))
+def horizontal_bounding_distance(sg1, sg2):
+    width1 = sg1.xmax - sg1.xmin
+    width2 = sg2.xmax - sg2.xmin
+    r12_x = NP.absolute(sg1.xmin + sg1.xmax - sg2.xmin - sg2.xmax)
+    return NP.divide(r12_x, (width1 + width2))
 
 def getStatFeatures(symbol):
     pts = NP.asarray(symbol.points()).T
