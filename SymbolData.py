@@ -14,6 +14,7 @@ import pickle
 import math
 import Segmentation
 from functools import reduce
+from sympy.geometry import *
 
 
 """ Contains representations for the relevant data,
@@ -108,6 +109,11 @@ class Stroke:
         self.points = self.asPoints()
         return list(zip(self.points[0: len(self.points)-1], self.points[1: len(self.points)]))
 
+    def scipySegments(self):
+        return list(map(toSegment, self.segments()))
+
+
+    
     def distances(self):
         return list(map((lambda s: distance(s[0], s[1])), self.segments())) 
 
@@ -170,30 +176,74 @@ class Stroke:
                 self.newpoint = (self.p1[0] + (self.perc * self.xdist), self.p1[0] + (self.perc * self.xdist))
                 self.newpoints.append(self.newpoint)
         self.points = self.newpoints
-                
+
+        
                                                               
     def intersects(self, other):
-        self.cleaned = self.withoutColinears()
-        self.otherCleaned = other.withoutColinears()
+        #self.cleaned = self.withoutColinears()
+        #self.otherCleaned = other.withoutColinears()
         if self.couldIntersect(other):
-            return not find_intersect(self.cleaned.xs, self.cleaned.ys, self.otherCleaned.xs, self.otherCleaned.ys, first=True ) is None
+            #assert(find_intersect(self.cleaned.xs, self.cleaned.ys, self.otherCleaned.xs, self.otherCleaned.ys, first=True ) ==
+            #       find_intersect(self.xs, self.ys, other.xs, other.ys, first=True ))
+            #return not find_intersect(self.cleaned.xs, self.cleaned.ys, self.otherCleaned.xs, self.otherCleaned.ys, first=True ) is None
+            return not find_intersect(self.xs, self.ys, other.xs, other.ys, first=True ) is None
         else:
             return False
         
     def intersections(self, other):
-        self.cleaned = self.withoutColinears()
-        self.otherCleaned = other.withoutColinears()
+        #self.cleaned = self.withoutColinears()
+        #self.otherCleaned = other.withoutColinears()
         if self.couldIntersect(other):
-            return list(map((lambda a: tuple(a)), find_intersect(self.cleaned.xs, self.cleaned.ys, self.otherCleaned.xs, self.otherCleaned.ys, first=False)))
+            #return list(map((lambda a: tuple(a)), find_intersect(self.cleaned.xs, self.cleaned.ys, self.otherCleaned.xs, self.otherCleaned.ys, first=False)))
+            return list(map((lambda a: tuple(a)), find_intersect(self.xs, self.ys, other.xs, other.ys, first=False)))
         else:
             return []
+    '''
+
+    def intersects(self, other):
+        self.segs1 = filter((lambda seg: intersectable(seg, other.xmin(), other.xmax(), other.ymin(), other.ymax())), self.segments())
+        self.segs2 = filter((lambda seg: intersectable(seg, self.xmin(), self.xmax(), self.ymin(), self.ymax())), other.segments())
+
+        for s1 in self.segs1:
+            for s2 in self.segs2:
+                if( calcIntersectionPoint(s1, s2) != []):
+                    return True
+
+        return False
         
+    def intersections(self, other):
+        self.segs1 = filter((lambda seg: intersectable(seg, other.xmin(), other.xmax(), other.ymin(), other.ymax())), self.segments())
+        self.segs2 = filter((lambda seg: intersectable(seg, self.xmin(), self.xmax(), self.ymin(), self.ymax())), other.segments())
+
+        self.l = []
+        for s1 in self.segs1:
+            for s2 in self.segs2:
+                self.l = self.l + calcIntersectionPoint(s1, s2)
+
+        return self.l
+    '''
+
+    '''
+    def calcSelfIntersections(self):
+        self.segs = self.segments()
+        if (len(self.segs) < 3):
+            return []
+        else:
+            self.l = []
+            for s1 in self.segs[:len(self.segs) - 2]:
+                for s2 in self.segs[2:]:
+                    self.l = self.l + calcIntersectionPoint(s1, s2)
+
+        return self.l
+    
+    '''
+
     def couldIntersect(self, other):
         return (not (self.xmin() > other.xmax() or other.xmin() > self.xmax() or self.ymin() > other.ymax() or other.ymin() > self.ymax()))
 
     # count intersections between strokes bounding box
-    def BoundingIntersect(self, other):
-        return 
+    #def BoundingIntersect(self, other):
+    #    return 
 
     def scale(self, xmin, xmax, ymin, ymax, xscale, yscale):
         if (xmax != xmin):
@@ -490,6 +540,73 @@ def find_intersect(x_down, y_down, x_up, y_up, first=True):
     else:
         return crossings
 
+'''
+
+#wrapper for something out of scipy since ours is broken.
+def toSegment(seg):
+    #print (seg)
+    if (isinstance(seg, Segment)):
+        return seg
+    else:
+        try:
+            p0 = Point(seg[0][0], seg[0][1])
+            p1 = Point(seg[1][0], seg[1][1])
+        except:
+            print(seg)
+    return Segment(p0, p1)
+    
+#does what it says on the tin.
+def calcIntersectionPoint(seg1, seg2):
+    if (not isinstance(seg1, Segment)):
+        s1 = toSegment(seg1)
+    else:
+        s1 = seg1
+
+    if (not isinstance(seg2, Segment)):
+        s2 = toSegment(seg2)
+    else:
+        s2 = seg2
+    
+    p = s1.intersection(s2)
+    if (p == []):
+        return []
+    elif(isinstance(p[0], Segment)):
+        p = [p[0].midpoint]
+        
+    
+       # print (p)
+    return [(float(p[0].x), float(p[0].y))]
+
+'''
+
+#used to see if a segment is in a bounding box, in whole or in part.
+def intersectable(seg, xmin, xmax, ymin, ymax):
+    if (seg[0][0] < seg[1][0]):
+        lp = seg[0]
+        rp = seg[1]
+    else:
+        lp = seg[1]
+        rp = seg[0]
+
+    if (lp[0] > xmax):
+        return False
+    if (rp[0] < xmin):
+        return False
+
+    if (seg[0][1] < seg[1][1]):
+        bp = seg[0]
+        tp = seg[1]
+    else:
+        bp = seg[1]
+        tp = seg[0]
+
+    if (bp[1] > ymax):
+        return False
+    if (tp[1] < ymin):
+        return False
+
+    return True
+    
 # methods to find if two strokes have bounding box intersection
 def stroke_boundingbox_intersection(stroke1, stroke2):
     (center, width, height) = stroke1.boundingbox_rectangle(stroke1)

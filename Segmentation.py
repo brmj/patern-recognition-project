@@ -5,8 +5,10 @@ import numpy as NP
 import matplotlib.pyplot as PLT
 import itertools
 import functools
+import os
 import SymbolData
 import Classification
+import SegFeatures
 from functools import reduce
 
 
@@ -94,13 +96,13 @@ class StrokeGroup:
         return max(list(map( (lambda stroke: stroke.ymax()), self.strokes)))
 
     def points(self):
-        return functools.reduce( (lambda a, b : a + b), (list(map ((lambda f: f.asPoints()), self.strokes))), [])
+        return reduce( (lambda a, b : a + b), (list(map ((lambda f: f.asPoints()), self.strokes))), [])
 
     def xs(self):
-        return functools.reduce( (lambda a, b : a + b), (list(map ((lambda f: f.xs), self.strokes))), [])
+        return reduce( (lambda a, b : a + b), (list(map ((lambda f: f.xs), self.strokes))), [])
 
     def ys(self):
-        return functools.reduce( (lambda a, b : a + b), (list(map ((lambda f: f.ys), self.strokes))), [])
+        return reduce( (lambda a, b : a + b), (list(map ((lambda f: f.ys), self.strokes))), [])
 
     def intersects(self, other):
         self.strokePairs = []
@@ -150,8 +152,15 @@ class Partition:
         #print ("Part: ", list(map((lambda sg: sg.strokeIdents()), self.strokeGroups)))
         return list(map((lambda sg: sg.strokeIdents()), self.strokeGroups))
 
+    def byIdentSet(self, iset):
+        self.isetl = self.identSetList()
+        if iset in self.isetl:
+            return self.strokeGroups[ self.isetl.index(iset) ]
+        else:
+            return None
+    
     def strokeIdents(self):
-        return functools.reduce( (lambda a, b : a.union(b)), self.identSetList(), set())
+        return reduce( (lambda a, b : a.union(b)), self.identSetList(), set())
 
     def toSymbols(self):
         return list(map((lambda sg: sg.toSymbol()), self.strokeGroups))
@@ -190,7 +199,7 @@ def readAndSegment(filename, segfun, warn = False, raw = False):
         return SymbolData.Expression(name, partition.toSymbols(), None)
         
 def readAndSegmentDirectory(filename, segfun, warn=False, raw = False):
-    fnames = filenames(filename)
+    fnames = SymbolData.filenames(filename)
     return list(map((lambda f: readAndSegment(f, segfun, warn, raw)), fnames))
             
 def comparePartitions(part1, part2, warn = False):
@@ -212,6 +221,7 @@ def comparePartitions(part1, part2, warn = False):
     return [correct, total]
 
 
+
 def comparePartitionsLists(l1, l2, warn = False):
     results = NP.array(list(map((lambda ps: comparePartitions(ps[0], ps[1], warn)), zip(l1, l2))))
     sums = results.sum(axis = 0)
@@ -226,10 +236,40 @@ def testSegmentation(filename, lgdir, segfun, warn = False):
     print (segrate)
     return segrate
 
-def true_partition():
-    return "foo"
+def pairIdentSet(pair):
+    return pair[0].strokeIdents().union(pair[1].strokeIdents())
 
+def lPairs(l):
+    if (len(l) < 2):
+        return []
+    else:
+        return list(zip(l[:len(l) -1], l[1:]))
 
+def pairIdentSets(part):
+    return list(map(pairIdentSet, lPairs(part.strokeGroups)))
+
+def inTruth(part, truePart):
+    return list(map((lambda s: not truePart.byIdentSet(s)  is None), pairIdentSets(part)))
+
+def fileTrainData(filename):
+    #specifically not indulging in premature optimization here...
+    interPart = readAndSegment(filename, intersection_partition, raw = True)
+    truePart = readTruePart(filename)
+
+    pairs = lPairs(interPart.strokeGroups)
+    features = SegFeatures.features(pairs)
+    
+    truths = inTruth(interPart, truePart)
+    def boolToInt(b):
+        if b:
+            return 1
+        else:
+            return 0
+
+    classes = list(map(boolToInt, truths))
+
+    return list(zip(features, truths))
+    
 
 def readTrueSG(root, tracegroup):
     truthAnnot = tracegroup.find(".//{http://www.w3.org/2003/InkML}annotation[@type='truth']")
