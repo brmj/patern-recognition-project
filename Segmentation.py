@@ -489,7 +489,7 @@ def mkMergeClassifiedPart(model, pca = None):
             i = 0
             current = part.strokeGroups[0]
             while i < len(pairs):
-                print( i , " of ", len(pairs))
+                #print( i , " of ", len(pairs))
             #for the moment, go with a simplistic greedy approach.
                 if (percs[i] > 0.5):
                     newGroups.append((pairs[i])[0].merge((pairs[i])[1]))
@@ -503,7 +503,7 @@ def mkMergeClassifiedPart(model, pca = None):
                     current = ((pairs[i])[1])
                     i+=1
             if (not current is None):
-                print("adding leftover: ", current)
+                #print("adding leftover: ", current)
                 newGroups.append(current)
             return Partition(newGroups, part.name, part.relations)
         else:

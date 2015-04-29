@@ -28,28 +28,14 @@ def main(argv=None):
 
         print ("Segmenting")
         #cleverpart = Segmentation.mkCleverPart(model, pca)
-        mypart = Segmentaton.mkMergeClassifiedPart(seg[0])
+        mypart = Segmentation.mkMergeClassifiedPart(seg[0])
         #exprs = Segmentation.readAndSegmentDirectory(argv[2],  Segmentation.intersection_partition)
         #exprs = SymbolData.readAndSegmentDirectory(argv[2],  Segmentation.stupid_partition)
         #exprs = SymbolData.readAndSegmentDirectory(argv[2], cleverpart)
         #exprs = SymbolData.readInkmlDirectory(argv[2], argv[3])
         exprs = SymbolData.readAndSegmentDirectory(argv[2], mypart)
 
-        
-        #the following is a placeholder until I am sure we have propper analysis tools for evaluating our results if we preserve files.
-#        symbs = SymbolData.allSymbols(exprs)
-#        print("Normalizing")
-#        symbs = SymbolData.normalize(symbs, 99)
-#        print("Calculating features.")
-#        f = Features.features(symbs)
-#        if (pca != None):
-#            print ("doing PCA")
-#            f = pca.transform(f)
-#        print ("Classifying.")
-#        pred = model.predict(f)
-        
-#        print( "Accuracy on testing set : ", accuracy_score(SymbolData.classNumbers(symbs, classes), pred))
-
+ 
         #code to write out results goes here.
         print ("Classifying")
         truths, preds = Classification.classifyExpressions(exprs, keys, model, pca, showAcc = True)

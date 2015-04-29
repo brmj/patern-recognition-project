@@ -127,7 +127,7 @@ def aspratio(symbol):
     return [(symbol.ymax()-symbol.ymin()+1)/(symbol.xmax()-symbol.xmin()+1)]
     
 def numstrokes(symbol):
-    return[symbol.strokenum]
+    return[symbol.strokenum()]
 
 # get number of intersections of strokes, in each symbol
 def numIntersections(symbol):

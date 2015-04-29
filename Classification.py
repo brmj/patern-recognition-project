@@ -96,8 +96,11 @@ def classifyExpression(expression, keys, model, pca, renormalize=True):
         return ([], [])
     if (pca != None):
         f = pca.transform(f)
+
+    #print (f)
     pred = model.predict(f)
     assert (max(pred) < len(keys))
+    
     f = (lambda p: keys[p])
     expression.classes = map (f, pred)
     return (NP.array(SymbolData.classNumbers(symbs, keys)), pred)
