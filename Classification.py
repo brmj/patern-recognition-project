@@ -32,7 +32,7 @@ class OneNN:
     
 def makeRF():
     #play with the options once we have a reasonable set of features to experiment with.
-    return sklearn.ensemble.RandomForestClassifier(n_estimators=50, n_jobs = -1)
+    return sklearn.ensemble.RandomForestClassifier(n_estimators=30, n_jobs = -1)
 
 def makeET():
     #play with the options once we have a reasonable set of features to experiment with.

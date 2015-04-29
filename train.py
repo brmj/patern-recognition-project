@@ -4,9 +4,10 @@ import pickle
 import SymbolData
 import Classification
 import Features
+import Segmentation
 from sklearn.metrics import accuracy_score
 
-usage = "Usage: $ python train.py (-nn|-rf|-et|modelFilename) outFilename (inFilename.dat | inkmldir lgdir)"
+usage = "Usage: $ python train.py (-nn|-rf|-et|modelFilename) outFilename inkmldir lgdir"
 
 def main(argv=None):
     if argv is None:
@@ -15,6 +16,7 @@ def main(argv=None):
         print(("bad number of args:" , len(argv)))
         print (usage)
     else:
+        print ("Reading symbols.")
         if (len ( argv ) == 3):
             exprs, keys = SymbolData.unpickleSymbols(argv[2])
         else:
@@ -34,6 +36,8 @@ def main(argv=None):
                 #things will break in ways that are hard for me to test for if it isn't.
 
         symbs = SymbolData.allSymbols(exprs)
+
+        print ("Training classifier.")
         
         trained, pca = Classification.train(model, symbs, keys)
 
@@ -45,8 +49,13 @@ def main(argv=None):
             pred = model.predict(f)
             print( "Accuracy on training set : ", accuracy_score(SymbolData.classNumbers(symbs, keys), pred))
 
+        print ("Training segmenter.")
 
         seg = []
+        seg = Segmentation.trainSegmentationClassifier (argv[2])
+        
+        print ("Done training.")
+
         #joblib.dump((trained, pca), argv[2])    
         with open(argv[1], 'wb') as f:
             pickle.dump((trained, pca, keys, seg), f, pickle.HIGHEST_PROTOCOL)

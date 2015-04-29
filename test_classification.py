@@ -27,7 +27,7 @@ def main(argv=None):
         
         #model, pca = joblib.load(argv[1]) 
         with open(argv[0], 'rb') as f:
-            model, pca, keys =  pickle.load(f)
+            model, pca, keys, seg =  pickle.load(f)
 
 
         #the following is a placeholder until I am sure we have propper analysis tools for evaluating our results if we preserve files.

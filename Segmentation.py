@@ -271,8 +271,35 @@ def fileTrainData(filename):
 
     classes = list(map(boolToInt, truths))
 
-    return list(zip(features, truths))
+    return list(zip(features, classes))
+
+def directoryTrainData(filename):
+    fnames = SymbolData.filenames(filename)
+    return reduce( (lambda a, b : a + b), (list(map ((lambda f: fileTrainData(f)), fnames))), [])    
+
+def trainSegmentationClassifier(filename, model = Classification.makeRF(), pca_num = None):
+    data =  directoryTrainData(filename)
+    features = list(map((lambda d:d[0]), data))
+    print(features)
+    classes = list(map((lambda d:d[1]), data))
     
+    pca = None
+    if (pca_num != None):
+        pca = sklearn.decomposition.PCA(n_components=pca_num)
+        pca.fit(features)
+        features = pca.transform(features)
+    #print (NP.array(features))
+    model.fit(features, classes)
+    return (model, pca)
+
+def classifyPairs(pairs, model, pca = None):
+    features = SegFeatures.features(pairs)
+    if (pca != None):
+        features = pca.transform(features)
+
+    percs = model.predict_proba(features)
+    return percs[:,1]
+
 
 def readTrueSG(root, tracegroup):
     truthAnnot = tracegroup.find(".//{http://www.w3.org/2003/InkML}annotation[@type='truth']")
@@ -331,16 +358,6 @@ def intersection_partition(strokes, name = None, relations = None):
     part.mergeIntersecting()
     return part
 
-def mkClassiffyPairMergeFun(model, pca, renormalize = True):
-    def isTwoPart (cls):
-        return cls in SymbolData.twoGroup
-    def makesymb(sgs):
-        return (reduce((lambda sg1, sg2: sg1.merge(sg2, inPlace=False)), list(map((lambda sg: sg.copy()),sgs)))).toSymbol()
-    def twoPartSymb(symb):
-        cls = Classification.classifySymbol(symb, model, pca, renormalize)
-        return isTwoPart(cls)
-    mergeFun = (lambda sgs: twoPartSymb(makesymb(sgs)))
-    return mergeFun
 
 def mkIsThreeGroupMergeFun(model, pca, renormalize = True):
     def isThreePart (clss):
@@ -451,3 +468,45 @@ def mkCleverPart(model, pca, renormalize = True, name = None, relations = None):
         return part3
 
     return (lambda strokes: cleverPart(strokes))
+
+def mkLessCleverPart(model, pca, renormalize = True, name = None, relations = None):
+    def cleverPart(strokes):
+        part = intersection_partition(strokes, name = None, relations = None)
+        merge2fun = mkClassiffyPairMergeFun(model, pca, renormalize)
+        part2 = mergePaired(merge2fun, part)
+        return part2
+    return cleverPart
+
+
+def mkMergeClassifiedPart(model, pca = None):
+    def partFun(strokes):
+        part = intersection_partition(strokes, name = None, relations = None)
+        if (len(part.strokeGroups) > 1):
+            pairs = lPairs(part.strokeGroups)
+            percs = classifyPairs(pairs, model, pca)
+        
+            newGroups = []
+            i = 0
+            current = part.strokeGroups[0]
+            while i < len(pairs):
+                print( i , " of ", len(pairs))
+            #for the moment, go with a simplistic greedy approach.
+                if (percs[i] > 0.5):
+                    newGroups.append((pairs[i])[0].merge((pairs[i])[1]))
+                    if i +2 < len (part.strokeGroups):
+                        current = part.strokeGroups [i + 2]
+                    else:
+                        current = None
+                    i +=2
+                else:
+                    newGroups.append((pairs[i])[0])
+                    current = ((pairs[i])[1])
+                    i+=1
+            if (not current is None):
+                print("adding leftover: ", current)
+                newGroups.append(current)
+            return Partition(newGroups, part.name, part.relations)
+        else:
+            return part
+
+    return partFun

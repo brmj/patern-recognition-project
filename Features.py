@@ -105,9 +105,9 @@ def symbolFeatures(symbol):
 #    f = NP.append(f,RWTH)
     
     #the minimum, basic scaling needed for many classifiers to work corectly.
-    f_scaled = preprocessing.scale(f)
+    #f_scaled = preprocessing.scale(f)
     # would have put PCA here, but that doesn't play nice with the way it needs to be used.
-    return f_scaled
+    return f
 
 # Some really simple global properties to start us off.
     
