@@ -45,8 +45,8 @@ def xmeanDist(sg1, sg2):
 def ymeanDist(sg1, sg2):
     return [NP.mean(sg1.ys())] - [NP.mean(sg2.ys())]
 
-# def numstrokes(sg1, sg2):
-#     return [sg1.strokenum] + [sg2.strokenum]
+def numstrokes(sg1, sg2):
+    return [sg1.strokenum] + [sg2.strokenum]
 
 def totlen(sg1, sg2):
     for sg in [sg1, sg2]:
