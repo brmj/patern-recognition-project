@@ -148,6 +148,16 @@ class Partition:
         self.name = name
         self.relations = relations
 
+
+    def plot(self, show = True, clear = True):
+        if clear:
+            PLT.clf()
+        for sg in self.strokeGroups:
+            sg.plot(show = False, clear = False)
+        if show:
+            PLT.show()
+
+
     def toExpression(self):
         return Expression(self.name, list(map((lambda sg: sg.toSymbol()), self.strokeGroups)), self.relations)
 
