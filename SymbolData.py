@@ -288,7 +288,7 @@ class Stroke:
     
 class Symbol:
     """Represents a symbol as a list of strokes. """
-    def __init__(self, strokes, correctClass = None, norm = True, ident = None, intersections = None, strokenum = None):
+    def __init__(self, strokes, correctClass = None, norm = True, ident = None, intersections = None, strokenum = None, xdistfrac = 1.0, ydistfrac = 1.0):
         self.strokes = strokes
         assert (strokes != [])
         assert (not strokes is None)
@@ -304,6 +304,9 @@ class Symbol:
             self.strokenum = len(strokes)
         else:
             self.strokenum = strokenum
+
+        self.xdistfrac = xdistfrac
+        self.ydistfrac = ydistfrac
         
 
     def plot(self, show = True, clear = True):
@@ -665,17 +668,19 @@ def readSymbol(root, tracegroup):
     
     
 def readFile(filename, warn=False):
-    tree = None
-    try:
-        #print (filename)
-        tree = ET.parse(filename)
-    except:
-        if warn:
-            print("warning: unparsable file.")
-        return []
-    root = tree.getroot()
-    tracegroups = root.findall('./*/{http://www.w3.org/2003/InkML}traceGroup')
-    symbols = list(map((lambda t: readSymbol(root, t)), tracegroups))
+    part = Segmentation.readTruePart(filename, warn)
+    symbols = part.toSymbols()
+    #    tree = None
+    #    try:
+    #        #print (filename)
+    #        tree = ET.parse(filename)
+    #    except:
+    #        if warn:
+    #            print("warning: unparsable file.")
+    #        return []
+    #    root = tree.getroot()
+    #    tracegroups = root.findall('./*/{http://www.w3.org/2003/InkML}traceGroup')
+    #    symbols = list(map((lambda t: readSymbol(root, t)), tracegroups))
     return symbols
        
 

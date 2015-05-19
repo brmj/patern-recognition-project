@@ -26,6 +26,8 @@ class StrokeGroup:
         self.correctClass = correctClass
         self.norm = norm
         self.ident = ident
+        self.xdistfrac = 1.0
+        self.ydistfrac = 1.0
 
         #let's see how it goes... Should still add stuff to deal with _almost_ colinear points, _almost_ identical, etc.
         #self.resample()
@@ -34,8 +36,7 @@ class StrokeGroup:
         #self.uniformResample(28) #a good start, since the prof suggested 30.
             
     def toSymbol(self):
-        self.newstrokes = self.strokes
-        return (SymbolData.Symbol(self.newstrokes, self.correctClass, self.norm, self.ident, self.intersections, self.strokenum))
+        return (SymbolData.Symbol(list(map ((lambda s: s.copy()), self.strokes)), self.correctClass, self.norm, self.ident, list(self.intersections), self.strokenum, self.xdistfrac, self.ydistfrac))
 
     def strokeIdents(self):
         #print("sg ", set(map((lambda s: s.ident),self.strokes)) )
@@ -50,7 +51,7 @@ class StrokeGroup:
             PLT.show()
 
     def copy(self):
-        return StrokeGroup(list(map ((lambda s: s.copy()), self.strokes)), intersections = self.intersections, correctClass = self.correctClass, norm = self.norm, ident = self.ident)
+        return StrokeGroup(list(map ((lambda s: s.copy()), self.strokes)), intersections = list(self.intersections), correctClass = self.correctClass, norm = self.norm, ident = self.ident)
             
     def merge(self, other, inPlace = True):
         self.newInts = set(self.intersections).union(set(other.intersections)).union(set(self.calcIntersections(other)))
@@ -107,6 +108,16 @@ class StrokeGroup:
     def ys(self):
         return reduce( (lambda a, b : a + b), (list(map ((lambda f: f.ys), self.strokes))), [])
 
+    def xdist(self):
+        return (self.xmax() - self.xmin())
+
+    def ydist(self):
+        return (self.ymax() - self.ymin())
+
+    def setDistFracs(self, xdistmean, ydistmean):
+        self.xdistfrac = (self.xdist() / float(xdistmean))
+        self.ydistfrac = (self.ydist() / float(ydistmean))
+    
     def intersects(self, other):
         self.strokePairs = []
         for stroke1 in self.strokes:
@@ -161,11 +172,30 @@ class Partition:
             return self.strokeGroups[ self.isetl.index(iset) ]
         else:
             return None
+
+    def xdistmean(self):
+        if (len (self.strokeGroups) == 0):
+            return 1
+        else:
+            return ((sum (map ((lambda sg: sg.xdist()), self.strokeGroups))) / float(len (self.strokeGroups)))
+
+    def ydistmean(self):
+        if (len (self.strokeGroups) == 0):
+            return 1
+        else:
+            return ((sum (map ((lambda sg: sg.ydist()), self.strokeGroups))) / float(len (self.strokeGroups)))
+
+    def setdistmeans(self):
+        self.xdm = self.xdistmean()
+        self.ydm = self.ydistmean()
+        map( (lambda sg: sg.setDistFracs(xdm, ydm)), self.strokeGroups)
     
     def strokeIdents(self):
         return reduce( (lambda a, b : a.union(b)), self.identSetList(), set())
 
     def toSymbols(self):
+        #print ("Setting dist means.")
+        self.setdistmeans()
         return list(map((lambda sg: sg.toSymbol()), self.strokeGroups))
     
     def inGroup(self, ident):
@@ -277,10 +307,12 @@ def directoryTrainData(filename):
     fnames = SymbolData.filenames(filename)
     return reduce( (lambda a, b : a + b), (list(map ((lambda f: fileTrainData(f)), fnames))), [])    
 
+
+
 def trainSegmentationClassifier(filename, model = Classification.makeRF(), pca_num = None):
     data =  directoryTrainData(filename)
     features = list(map((lambda d:d[0]), data))
-    print(features)
+    #print(features)
     classes = list(map((lambda d:d[1]), data))
     
     pca = None
