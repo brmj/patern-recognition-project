@@ -13,6 +13,7 @@ import pickle
 import functools
 import itertools
 from functools import reduce
+import subprocess
 
 
 """ Contains representations for the relevant data,
@@ -223,6 +224,11 @@ class Expression:
             
                 for relation in self.relations:
                     f.write(relation)
+
+    ### generate ground truth lgfile
+    def convertInkmlLg(self, directory, name):
+
+        subprocess.check_call(["crohme2lg", "-n", self, directory + "/" + name + ".lg"])
 
 
 
@@ -598,6 +604,8 @@ def normalize(symbols, scale):
 
         k+=1    
     return(symbols)
+
+
 
 ### parse lgfile
 def parse_lgfile(lgfile):
