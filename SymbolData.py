@@ -178,6 +178,13 @@ class Expression:
         self.relations = relations
         self.classes = []
 
+    def plot(self, show = True, clear = True):
+        if clear:
+            PLT.clf()
+        for symbol in self.symbols:
+            symbol.plot(show = False, clear = False)
+        if show:
+            PLT.show()
 
     def identSetList(self):
         return list(map((lambda s: s.strokeIdents()), self.symbols))
