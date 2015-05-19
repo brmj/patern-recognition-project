@@ -150,7 +150,18 @@ class StrokeGroup:
              
     def __str__(self):
         return ("StrokeGroup " + str(list(map((lambda s: s.ident), self.strokes))))
-    
+
+    def plot_bounding_box(self):
+
+        width = self.xmax - self.xmin
+        height = self.ymax - self.ymin
+
+        rectangle = PLT.Rectangle((self.xmin, self.ymin), width, height, fc='r')
+        PLT.gca().add_patch(rectangle)
+
+
+
+
 
 class Partition:
     """A partition of the strokes in a file into segments. This is to expressions what a stroke group is to symbols, bassically."""
@@ -158,6 +169,16 @@ class Partition:
         self.strokeGroups = strokeGroups
         self.name = name
         self.relations = relations
+
+
+    def plot(self, show = True, clear = True):
+        if clear:
+            PLT.clf()
+        for sg in self.strokeGroups:
+            sg.plot(show = False, clear = False)
+        if show:
+            PLT.show()
+
 
     def toExpression(self):
         return Expression(self.name, list(map((lambda sg: sg.toSymbol()), self.strokeGroups)), self.relations)
