@@ -166,7 +166,6 @@ class Symbol:
         for stroke in self.strokes:
             self.strng = self.strng + '\n' + str(stroke)
         return self.strng
-    
 
 
 # Holds the symbols from an inkml file.
