@@ -145,7 +145,13 @@ class Parse:
         else:
             return self.sns[self.head].lg_rel_lines()
         
+def leftToRight(strokeGroups, sgs = None):
+    if sgs == None: #then they really are just stroke groups
+        return sorted(strokeGroups, key=(lambda sg: sg.xmin()))
+    else: #otherwise, they are idents.
+        return sorted(strokeGroups, key=(lambda sg: sgs[sg].xmin()))
 
+        
 def veryStupidParse(partition): #Assumes the stroke groups are left to right, in order. Not a smart assumption. Just a baseline/testing sort of thing.
     sgs = {}
     for sg in partition.strokeGroups:
@@ -159,15 +165,37 @@ def veryStupidParse(partition): #Assumes the stroke groups are left to right, in
         parse.head = partition.strokeGroups[0].ident
         sns[parse.head] = SymbolNode(partition.strokeGroups[0], sns, sgs) #pretend these are pointers to get how it works.
         
-    prev = partition.strokeGroups[0].ident
-    for sg in partition.strokeGroups[1:]:
-        sns[prev].right = sg.ident
-        sns[sg.ident] = SymbolNode(sg, sns, sgs)
-        prev = sg.ident
+        prev = partition.strokeGroups[0].ident
+        for sg in partition.strokeGroups[1:]:
+            sns[prev].right = sg.ident
+            sns[sg.ident] = SymbolNode(sg, sns, sgs)
+            prev = sg.ident
 
     parse.sns = sns
     return parse
-    
+
+def lessStupidParse(partition): #Assumes everything is in a single line. Not a smart assumption. Just a baseline/testing sort of thing.
+    sgs = {}
+    for sg in partition.strokeGroups:
+        sgs[sg.ident] = sg
+
+    sns = {}
+    parse = Parse(sgs)
+    l2r = leftToRight(list(map ((lambda sg: sg.ident), partition.strokeGroups)), sgs)
+    if len (sgs) == 0:
+        parse.head = None
+    else:
+        parse.head = l2r[0]
+        sns[parse.head] = SymbolNode(sgs[l2r[0]], sns, sgs) #pretend these are pointers to get how it works.
+        
+        prev = l2r[0]
+        for sgi in l2r[1:]:
+            sns[prev].right = sgi
+            sns[sgi] = SymbolNode(sgs[sgi], sns, sgs)
+            prev = sgi
+
+    parse.sns = sns
+    return parse
         
 def trueParse(partition, rels = None): #MUST be a true segmentation with ground truth idents and matching relationship lines from an lg file.
     if rels is None:
