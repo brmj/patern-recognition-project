@@ -378,7 +378,7 @@ def readLG(filename):
     relations = []
     for line in lines:
         if (line[0] == 'R' or line[0:2] =='EO'):
-            relations.append(line)
+            relations.append(line.rstrip())
 
     return relations        
 
@@ -646,4 +646,4 @@ def parse_lgfile(lgfile):
 
     for i in range(start, end):
         edge = lgfile_Dict[i]
-        print edge
+        print (edge)

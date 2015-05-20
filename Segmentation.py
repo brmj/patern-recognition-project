@@ -394,13 +394,16 @@ def readTrueSGsDirectory(filename, warn=False):
     fnames = SymbolData.filenames(filename)
     return reduce( (lambda a, b : a + b), (list(map ((lambda f: readTrueSGsFile(f, warn)), fnames))), [])
 
-def readTruePart(filename, warn=False):
+def readTruePart(filename, warn=False, lgdir = None):
     sgs = readTrueSGsFile(filename, warn)
-    return Partition(sgs)
+    rels = None
+    if not lgdir is None:
+        rels = SymbolData.readLG(SymbolData.fnametolg(filename, lgdir))
+    return Partition(sgs, relations = rels)
 
-def readTruePartsDirectory(filename, warn=False):
+def readTruePartsDirectory(filename, warn=False, lgdir = None):
     fnames = SymbolData.filenames(filename)
-    return list(map((lambda f: readTruePart(f, lgdir, warn)), fnames))
+    return list(map((lambda f: readTruePart(f, lgdir, warn, lgdir)), fnames))
 
 def stupid_partition(strokes, name = None, relations = None):
     sgs = list(map((lambda s: StrokeGroup([s])), strokes))
