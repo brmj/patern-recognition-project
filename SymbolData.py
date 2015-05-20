@@ -59,7 +59,8 @@ class Stroke:
     def intersections(self, other):
         return find_intersect(self.xs, self.ys, other.xs, other.ys, first=False )
 
-    
+    def copy(self):
+        return Stroke(self.asPoints()[:], flip = False, ident = self.ident)
 
 
     def scale(self, xmin, xmax, ymin, ymax, xscale, yscale):
@@ -212,8 +213,11 @@ class Expression:
         self.filename = os.path.join(directory, (self.name + '.lg'))
         if (clss == None):
             print ("none clss")
-            assert (len (list(self.classes)) == len (list(self.symbols)))
-            self.clss = list(self.classes)
+            if self.classes == []:
+                self.clss = list(map ((lambda s: s.correctClass), self.symbols))
+            else:
+                assert (len (list(self.classes)) == len (list(self.symbols)))
+                self.clss = list(self.classes)
         else:
             self.clss = list(clss)
             
@@ -236,10 +240,12 @@ class Expression:
             for line in self.symblines:
                 f.write(line)
             if self.relations != None:
-                f.write('\n#Relations imported from original\n')
+                #f.write('\n#Relations imported from original\n')
+                f.write("\n\n")
             
                 for relation in self.relations:
                     f.write(relation)
+                    f.write("\n")
 
     ### generate ground truth lgfile
     def convertInkmlLg(self, directory, name):

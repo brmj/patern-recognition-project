@@ -181,7 +181,7 @@ class Partition:
 
 
     def toExpression(self):
-        return Expression(self.name, list(map((lambda sg: sg.toSymbol()), self.strokeGroups)), self.relations)
+        return SymbolData.Expression(self.name, list(map((lambda sg: sg.toSymbol()), self.strokeGroups)), self.relations)
 
     def identSetList(self):
         #print ("Part: ", list(map((lambda sg: sg.strokeIdents()), self.strokeGroups)))
@@ -354,7 +354,7 @@ def classifyPairs(pairs, model, pca = None):
     return percs[:,1]
 
 
-def readTrueSG(root, tracegroup):
+def readTrueSG(root, tracegroup, calcInts = True):
     truthAnnot = tracegroup.find(".//{http://www.w3.org/2003/InkML}annotation[@type='truth']")
     identAnnot = tracegroup.find(".//{http://www.w3.org/2003/InkML}annotationXML")    
     strokeElems = tracegroup.findall('.//{http://www.w3.org/2003/InkML}traceView')
@@ -372,11 +372,13 @@ def readTrueSG(root, tracegroup):
         idnt = str(strokeNums).replace(', ', '_')
     else:
         idnt = identAnnot.attrib['href'].replace(',', 'COMMA')
-
-    sg = StrokeGroup(strokes, correctClass = truthText, norm=True, ident=idnt )
+    if calcInts:
+        sg = StrokeGroup(strokes, correctClass = truthText, norm=True, ident=idnt )
+    else:
+        sg = StrokeGroup(strokes, intersections = [], correctClass = truthText, norm=True, ident=idnt )
     return sg
     
-def readTrueSGsFile(filename, warn=False):
+def readTrueSGsFile(filename, warn=False, calcInts = True):
     tree = None
     try:
         #print (filename)
@@ -387,23 +389,25 @@ def readTrueSGsFile(filename, warn=False):
         return []
     root = tree.getroot()
     tracegroups = root.findall('./*/{http://www.w3.org/2003/InkML}traceGroup')
-    sgs = list(map((lambda t: readTrueSG(root, t)), tracegroups))
+    sgs = list(map((lambda t: readTrueSG(root, t, calcInts)), tracegroups))
     return sgs
 
-def readTrueSGsDirectory(filename, warn=False):
+def readTrueSGsDirectory(filename, warn=False, calcInts = True):
     fnames = SymbolData.filenames(filename)
-    return reduce( (lambda a, b : a + b), (list(map ((lambda f: readTrueSGsFile(f, warn)), fnames))), [])
+    return reduce( (lambda a, b : a + b), (list(map ((lambda f: readTrueSGsFile(f, warn, calcInts)), fnames))), [])
 
-def readTruePart(filename, warn=False, lgdir = None):
-    sgs = readTrueSGsFile(filename, warn)
+def readTruePart(filename, warn=False, lgdir = None, calcInts = True):
+    sgs = readTrueSGsFile(filename, warn, calcInts)
+    rdir, filenm = os.path.split(filename)
+    name, ext = os.path.splitext(filenm)
     rels = None
     if not lgdir is None:
         rels = SymbolData.readLG(SymbolData.fnametolg(filename, lgdir))
-    return Partition(sgs, relations = rels)
+    return Partition(sgs, name = name, relations = rels)
 
-def readTruePartsDirectory(filename, warn=False, lgdir = None):
+def readTruePartsDirectory(filename, warn=False, lgdir = None, calcInts = True):
     fnames = SymbolData.filenames(filename)
-    return list(map((lambda f: readTruePart(f, lgdir, warn, lgdir)), fnames))
+    return list(map((lambda f: readTruePart(f, warn, lgdir, calcInts)), fnames))
 
 def stupid_partition(strokes, name = None, relations = None):
     sgs = list(map((lambda s: StrokeGroup([s])), strokes))

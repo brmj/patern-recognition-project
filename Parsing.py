@@ -196,6 +196,26 @@ def lessStupidParse(partition): #Assumes everything is in a single line. Not a s
 
     parse.sns = sns
     return parse
+
+def recursiveParse(partition): #Loop through a series of reductions like in the optimization pass of a compiler. Some involve recursively parsing regions. Tack on remainder, if any.
+    sgs = {}
+    for sg in partition.strokeGroups:
+        sgs[sg.ident] = sg
+
+    sns = {}
+    parse = Parse(sgs)
+    if len (sgs) == 0:
+        parse.head = None
+    else:
+        parse.head = l2r[0]
+        sns[parse.head] = SymbolNode(sgs[l2r[0]], sns, sgs) #pretend these are pointers to get how it works.
+
+        
+
+    parse.sns = sns
+    return parse
+
+    
         
 def trueParse(partition, rels = None): #MUST be a true segmentation with ground truth idents and matching relationship lines from an lg file.
     if rels is None:
