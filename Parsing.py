@@ -197,6 +197,31 @@ def lessStupidParse(partition): #Assumes everything is in a single line. Not a s
     parse.sns = sns
     return parse
 
+def badParse(partition): #Should never be right. Testing thing.
+    sgs = {}
+    for sg in partition.strokeGroups:
+        sgs[sg.ident] = sg
+
+    sns = {}
+    parse = Parse(sgs)
+    l2r = leftToRight(list(map ((lambda sg: sg.ident), partition.strokeGroups)), sgs)
+    r2l = list(reversed(l2r))
+    if len (sgs) == 0:
+        parse.head = None
+    else:
+        parse.head = r2l[0]
+        sns[parse.head] = SymbolNode(sgs[r2l[0]], sns, sgs) #pretend these are pointers to get how it works.
+        
+        prev = r2l[0]
+        for sgi in r2l[1:]:
+            sns[prev].right = sgi
+            sns[sgi] = SymbolNode(sgs[sgi], sns, sgs)
+            prev = sgi
+
+    parse.sns = sns
+    return parse
+
+
 def recursiveParse(partition): #Loop through a series of reductions like in the optimization pass of a compiler. Some involve recursively parsing regions. Tack on remainder, if any.
     sgs = {}
     for sg in partition.strokeGroups:
@@ -274,17 +299,14 @@ def getHead(sns, sgs):
     return parentless.pop()
             
             
-SymbolClassesDict = 
-    {'baseline': ['\\alpha', '\\cos', '\\gamma', '\\infty', '\\pi', '\\sigma', '\\times', 'a', 'c', 'e', 'm', 'n', 'o', 'r', 's', 'u', 'v', 'w', 'x', 'z', '\\epsilon', '\\varepsilon', '\\iota', '\\kappa', '\\nu', '\\pi', '\\sigma', '\\tau', '\\upsilon', '\\omega'],
-     'ascender': ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '\\pm', '\\wedge', '\\vee', '\\forall', '\\in', '\\exists', '\\cup', '\\cap', '\\delta', '\\theta', '\\vartheta', '\\lambda', '\\Gamma', '\\Delta', '\\Theta', '\\Lambda', '\\Xi', '\\Pi', '\\Sigma', '\\Upsilon', '\\Phi', '\\Psi', '\\Omega', 'i'],
-     'descender': ['\\beta', '\\mu', 'g', 'p', 'q', 'y', '\\eta', '\\mu', '\\rho', '\\chi'],
-     'extender': ['(', ')', '[', ']', '\\supset', '\\subset', '\\notin', '\\zeta', '\\xi', '\\phi', '\\psi', 'j'],
-     'centered': ['\\times', '\\div', '\\rightarrow', '\\leftarrow', '\\Rightarrow', '-'],
-     'large_extender': ['\\mid', '{', '}'],
-     'root': '\\sqrt',
-     'punctuation': ['\\leq', '\\geq', '\\neq', '\\approx', '\\prime', '\\neg'],
-     '.': ['\\cdot'],
-     '...': ['\\cdots'],
-     ',': ['COMMA']
-
-    }
+SymbolClassesDict = {'baseline': ['\\alpha', '\\cos', '\\gamma', '\\infty', '\\pi', '\\sigma', '\\times', 'a', 'c', 'e', 'm', 'n', 'o', 'r', 's', 'u', 'v', 'w', 'x', 'z', '\\epsilon', '\\varepsilon', '\\iota', '\\kappa', '\\nu', '\\pi', '\\sigma', '\\tau', '\\upsilon', '\\omega'],
+                     'ascender': ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '\\pm', '\\wedge', '\\vee', '\\forall', '\\in', '\\exists', '\\cup', '\\cap', '\\delta', '\\theta', '\\vartheta', '\\lambda', '\\Gamma', '\\Delta', '\\Theta', '\\Lambda', '\\Xi', '\\Pi', '\\Sigma', '\\Upsilon', '\\Phi', '\\Psi', '\\Omega', 'i'],
+                     'descender': ['\\beta', '\\mu', 'g', 'p', 'q', 'y', '\\eta', '\\mu', '\\rho', '\\chi'],
+                     'extender': ['(', ')', '[', ']', '\\supset', '\\subset', '\\notin', '\\zeta', '\\xi', '\\phi', '\\psi', 'j'],
+                     'centered': ['\\times', '\\div', '\\rightarrow', '\\leftarrow', '\\Rightarrow', '-'],
+                     'large_extender': ['\\mid', '{', '}'],
+                     'root': '\\sqrt',
+                     'punctuation': ['\\leq', '\\geq', '\\neq', '\\approx', '\\prime', '\\neg'],
+                     '.': ['\\cdot'],
+                     '...': ['\\cdots'],
+                     ',': ['COMMA'] }

@@ -17,7 +17,7 @@ def main(argv=None):
         print("reading inkml files.")
         outdir = argv[0]
         inkmldir = argv[1]
-        if not( argv[2] == 'vs' or argv[2] == 'ls'):
+        if not( argv[2] == 'vs' or argv[2] == 'ls' or argv[2] == 'bad'):
             lgdir = argv[2]
             parts = Segmentation.readTruePartsDirectory(inkmldir, warn=False, lgdir = lgdir, calcInts = False)
         else:
@@ -28,8 +28,10 @@ def main(argv=None):
                 pfunc = Parsing.veryStupidParse
             elif argv[2] == 'ls':
                 pfunc = Parsing.lessStupidParse
+            elif argv[2] == 'bad':
+                pfunc = Parsing.badParse
             for part in parts:
-                part.rels = pfunc(part)
+                part.relations = pfunc(part).lg_rel_lines()
         exprs = [part.toExpression() for part in parts] 
  
         #code to write out results goes here.
