@@ -76,7 +76,7 @@ def classifyExpressions(expressions, keys, model, pca, renormalize=True, showAcc
 #            cors = [[], []]
         
         preds = preds + [predicted]
-        print(i, "/",tot)
+        #print(i, "/",tot)
         i+=1
         #print (correct, " -> ", predicted)
 

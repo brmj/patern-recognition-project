@@ -1,13 +1,17 @@
 import numpy as NP
 #import SymbolData
-from skimage.morphology import disk, binary_closing
-from skimage.filter import rank
+#from skimage.morphology import disk, binary_closing
+#from skimage.filter import rank
 #from skimage.transform import rescale
 from sklearn import preprocessing
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
-from PIL import Image, ImageDraw
+#from PIL import Image, ImageDraw
 import pickle
+
+import Segmentation
+import SymbolData
+
 
 # This is a skeleton of a file that will contain functions for various features.
 
@@ -45,7 +49,7 @@ def features(symbols):
 #                   I[i][j]=1
 #       print("getimg: ", i, " ", j)
 #       return I
-
+'''
 def getImg(symbol):
     assert (len(symbol.xs()) != 0)
     print ((round(max(symbol.xs()))+1,round(max(symbol.ys()))+1))
@@ -77,9 +81,16 @@ def showImg(symbol):
     plt.imshow(I)
     plt.gray()
     plt.show()
-    
+   
+'''
+ 
 # Get the features from a symbol
 def symbolFeatures(symbol):
+    if (isinstance(symbol, Segmentation.StrokeGroup)):
+        print ("Why are we calculating features for a stroke group?!")
+        symbol = symbol.toSymbol()
+    
+
     f = NP.array([])
     
     #Call feature functions here like so:
@@ -90,6 +101,7 @@ def symbolFeatures(symbol):
     # append intersections feature
     f = NP.append(f,numIntersections(symbol))
     f = NP.append(f,totlen(symbol))
+    f = NP.append(f,meanfracs(symbol))
 ##    f = NP.append(f,xvar(symbol))
 ##    f = NP.append(f,yvar(symbol))
     f = NP.append(f,getStatFeatures(symbol))
@@ -127,7 +139,7 @@ def aspratio(symbol):
     return [(symbol.ymax()-symbol.ymin()+1)/(symbol.xmax()-symbol.xmin()+1)]
     
 def numstrokes(symbol):
-    return[symbol.strokenum()]
+    return[float(symbol.strokenum())]
 
 # get number of intersections of strokes, in each symbol
 def numIntersections(symbol):
@@ -136,10 +148,15 @@ def numIntersections(symbol):
 # get number of bounding box intersections of strokes
 def numBoundingIntersections(symbol):
     return [len(symbol.BoundingIntersect)]
+
 def totlen(symbol):
     assert(not(symbol.totlen() is None and len(symbol.points()) >1))
     return [symbol.totlen()]
 
+def meanfracs(symbol):
+    if ((float(symbol.xdistfrac), float(symbol.ydistfrac)) == (1.0, 1.0)):
+        print ("If you see this a lot, somethign isn't getting set up right.")
+    return [float(symbol.xdistfrac), float(symbol.ydistfrac)]
 
 def getStatFeatures(symbol):
     pts = NP.asarray(symbol.points()).T
@@ -160,7 +177,7 @@ def getStatFeatures(symbol):
         f = NP.zeros((9))
     
     return f
-    
+'''    
 ## FKI Features 
 def getFKIfeatures(I):
     [H,W] = I.shape
@@ -249,7 +266,7 @@ def getRWTHfeatures(I,w,dim):
         except:
             f = NP.zeros((W-w+1,dim))
     return(f)
-
+'''
 
 ## Get Mean and Variance of features
 def getMeanStd(f):

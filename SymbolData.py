@@ -59,7 +59,8 @@ class Stroke:
     def intersections(self, other):
         return find_intersect(self.xs, self.ys, other.xs, other.ys, first=False )
 
-    
+    def copy(self):
+        return Stroke(self.asPoints()[:], flip = False, ident = self.ident)
 
 
     def scale(self, xmin, xmax, ymin, ymax, xscale, yscale):
@@ -93,12 +94,21 @@ class Stroke:
     
 class Symbol:
     """Represents a symbol as a list of strokes. """
-    def __init__(self, strokes, correctClass = None, norm = True, ident = None):
+    def __init__(self, strokes, correctClass = None, norm = True, ident = None, intersections = None, strokenum = None, xdistfrac = 1.0, ydistfrac = 1.0):
         self.strokes = strokes
         self.ident = ident
         if norm:
             self.normalize()
         self.correctClass = correctClass
+
+        if(strokenum is None):
+            self.strokenum = len(strokes)
+        else:
+            self.strokenum = strokenum
+
+        self.xdistfrac = xdistfrac
+        self.ydistfrac = ydistfrac
+        
 
     def plot(self, show = True, clear = True):
         if clear:
@@ -202,8 +212,11 @@ class Expression:
         self.filename = os.path.join(directory, (self.name + '.lg'))
         if (clss == None):
             print ("none clss")
-            assert (len (list(self.classes)) == len (list(self.symbols)))
-            self.clss = list(self.classes)
+            if self.classes == []:
+                self.clss = list(map ((lambda s: s.correctClass), self.symbols))
+            else:
+                assert (len (list(self.classes)) == len (list(self.symbols)))
+                self.clss = list(self.classes)
         else:
             self.clss = list(clss)
             
@@ -226,10 +239,12 @@ class Expression:
             for line in self.symblines:
                 f.write(line)
             if self.relations != None:
-                f.write('\n#Relations imported from original\n')
+                #f.write('\n#Relations imported from original\n')
+                f.write("\n\n")
             
                 for relation in self.relations:
                     f.write(relation)
+                    f.write("\n")
 
     ### generate ground truth lgfile
     def convertInkmlLg(self, directory, name):
@@ -313,17 +328,20 @@ def readSymbol(root, tracegroup):
     
     
 def readFile(filename, warn=False):
-    try:
-        #print (filename)
-        tree = ET.parse(filename)
-        root = tree.getroot()
-        tracegroups = root.findall('./*/{http://www.w3.org/2003/InkML}traceGroup')
-        symbols = list(map((lambda t: readSymbol(root, t)), tracegroups))
-        return symbols
-    except:
-        if warn:
-            print("warning: unparsable file.")
-        return []
+    part = Segmentation.readTruePart(filename, warn)
+    symbols = part.toSymbols()
+    #    tree = None
+    #    try:
+    #        #print (filename)
+    #        tree = ET.parse(filename)
+    #    except:
+    #        if warn:
+    #            print("warning: unparsable file.")
+    #        return []
+    #    root = tree.getroot()
+    #    tracegroups = root.findall('./*/{http://www.w3.org/2003/InkML}traceGroup')
+    #    symbols = list(map((lambda t: readSymbol(root, t)), tracegroups))
+    return symbols
 
 def readFileStrokes(filename, warn = False):
     try:
@@ -365,7 +383,7 @@ def readLG(filename):
     relations = []
     for line in lines:
         if (line[0] == 'R' or line[0:2] =='EO'):
-            relations.append(line)
+            relations.append(line.rstrip())
 
     return relations        
 
@@ -633,4 +651,4 @@ def parse_lgfile(lgfile):
 
     for i in range(start, end):
         edge = lgfile_Dict[i]
-        print edge
+        print (edge)

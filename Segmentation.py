@@ -26,6 +26,8 @@ class StrokeGroup:
         self.correctClass = correctClass
         self.norm = norm
         self.ident = ident
+        self.xdistfrac = 1.0
+        self.ydistfrac = 1.0
 
         #let's see how it goes... Should still add stuff to deal with _almost_ colinear points, _almost_ identical, etc.
         #self.resample()
@@ -34,8 +36,7 @@ class StrokeGroup:
         #self.uniformResample(28) #a good start, since the prof suggested 30.
             
     def toSymbol(self):
-        self.newstrokes = self.strokes
-        return (SymbolData.Symbol(self.newstrokes, self.correctClass, self.norm, self.ident, self.intersections, self.strokenum))
+        return (SymbolData.Symbol(list(map ((lambda s: s.copy()), self.strokes)), self.correctClass, self.norm, self.ident, list(self.intersections), self.strokenum, self.xdistfrac, self.ydistfrac))
 
     def strokeIdents(self):
         #print("sg ", set(map((lambda s: s.ident),self.strokes)) )
@@ -50,7 +51,7 @@ class StrokeGroup:
             PLT.show()
 
     def copy(self):
-        return StrokeGroup(list(map ((lambda s: s.copy()), self.strokes)), intersections = self.intersections, correctClass = self.correctClass, norm = self.norm, ident = self.ident)
+        return StrokeGroup(list(map ((lambda s: s.copy()), self.strokes)), intersections = list(self.intersections), correctClass = self.correctClass, norm = self.norm, ident = self.ident)
             
     def merge(self, other, inPlace = True):
         self.newInts = set(self.intersections).union(set(other.intersections)).union(set(self.calcIntersections(other)))
@@ -107,6 +108,16 @@ class StrokeGroup:
     def ys(self):
         return reduce( (lambda a, b : a + b), (list(map ((lambda f: f.ys), self.strokes))), [])
 
+    def xdist(self):
+        return (self.xmax() - self.xmin())
+
+    def ydist(self):
+        return (self.ymax() - self.ymin())
+
+    def setDistFracs(self, xdistmean, ydistmean):
+        self.xdistfrac = (self.xdist() / float(xdistmean))
+        self.ydistfrac = (self.ydist() / float(ydistmean))
+    
     def intersects(self, other):
         self.strokePairs = []
         for stroke1 in self.strokes:
@@ -170,7 +181,7 @@ class Partition:
 
 
     def toExpression(self):
-        return Expression(self.name, list(map((lambda sg: sg.toSymbol()), self.strokeGroups)), self.relations)
+        return SymbolData.Expression(self.name, list(map((lambda sg: sg.toSymbol()), self.strokeGroups)), self.relations)
 
     def identSetList(self):
         #print ("Part: ", list(map((lambda sg: sg.strokeIdents()), self.strokeGroups)))
@@ -182,11 +193,30 @@ class Partition:
             return self.strokeGroups[ self.isetl.index(iset) ]
         else:
             return None
+
+    def xdistmean(self):
+        if (len (self.strokeGroups) == 0):
+            return 1
+        else:
+            return ((sum (map ((lambda sg: sg.xdist()), self.strokeGroups))) / float(len (self.strokeGroups)))
+
+    def ydistmean(self):
+        if (len (self.strokeGroups) == 0):
+            return 1
+        else:
+            return ((sum (map ((lambda sg: sg.ydist()), self.strokeGroups))) / float(len (self.strokeGroups)))
+
+    def setdistmeans(self):
+        self.xdm = self.xdistmean()
+        self.ydm = self.ydistmean()
+        map( (lambda sg: sg.setDistFracs(xdm, ydm)), self.strokeGroups)
     
     def strokeIdents(self):
         return reduce( (lambda a, b : a.union(b)), self.identSetList(), set())
 
     def toSymbols(self):
+        #print ("Setting dist means.")
+        self.setdistmeans()
         return list(map((lambda sg: sg.toSymbol()), self.strokeGroups))
     
     def inGroup(self, ident):
@@ -298,10 +328,12 @@ def directoryTrainData(filename):
     fnames = SymbolData.filenames(filename)
     return reduce( (lambda a, b : a + b), (list(map ((lambda f: fileTrainData(f)), fnames))), [])    
 
+
+
 def trainSegmentationClassifier(filename, model = Classification.makeRF(), pca_num = None):
     data =  directoryTrainData(filename)
     features = list(map((lambda d:d[0]), data))
-    print(features)
+    #print(features)
     classes = list(map((lambda d:d[1]), data))
     
     pca = None
@@ -322,7 +354,7 @@ def classifyPairs(pairs, model, pca = None):
     return percs[:,1]
 
 
-def readTrueSG(root, tracegroup):
+def readTrueSG(root, tracegroup, calcInts = True):
     truthAnnot = tracegroup.find(".//{http://www.w3.org/2003/InkML}annotation[@type='truth']")
     identAnnot = tracegroup.find(".//{http://www.w3.org/2003/InkML}annotationXML")    
     strokeElems = tracegroup.findall('.//{http://www.w3.org/2003/InkML}traceView')
@@ -340,11 +372,13 @@ def readTrueSG(root, tracegroup):
         idnt = str(strokeNums).replace(', ', '_')
     else:
         idnt = identAnnot.attrib['href'].replace(',', 'COMMA')
-
-    sg = StrokeGroup(strokes, correctClass = truthText, norm=True, ident=idnt )
+    if calcInts:
+        sg = StrokeGroup(strokes, correctClass = truthText, norm=True, ident=idnt )
+    else:
+        sg = StrokeGroup(strokes, intersections = [], correctClass = truthText, norm=True, ident=idnt )
     return sg
     
-def readTrueSGsFile(filename, warn=False):
+def readTrueSGsFile(filename, warn=False, calcInts = True):
     tree = None
     try:
         #print (filename)
@@ -355,20 +389,25 @@ def readTrueSGsFile(filename, warn=False):
         return []
     root = tree.getroot()
     tracegroups = root.findall('./*/{http://www.w3.org/2003/InkML}traceGroup')
-    sgs = list(map((lambda t: readTrueSG(root, t)), tracegroups))
+    sgs = list(map((lambda t: readTrueSG(root, t, calcInts)), tracegroups))
     return sgs
 
-def readTrueSGsDirectory(filename, warn=False):
+def readTrueSGsDirectory(filename, warn=False, calcInts = True):
     fnames = SymbolData.filenames(filename)
-    return reduce( (lambda a, b : a + b), (list(map ((lambda f: readTrueSGsFile(f, warn)), fnames))), [])
+    return reduce( (lambda a, b : a + b), (list(map ((lambda f: readTrueSGsFile(f, warn, calcInts)), fnames))), [])
 
-def readTruePart(filename, warn=False):
-    sgs = readTrueSGsFile(filename, warn)
-    return Partition(sgs)
+def readTruePart(filename, warn=False, lgdir = None, calcInts = True):
+    sgs = readTrueSGsFile(filename, warn, calcInts)
+    rdir, filenm = os.path.split(filename)
+    name, ext = os.path.splitext(filenm)
+    rels = None
+    if not lgdir is None:
+        rels = SymbolData.readLG(SymbolData.fnametolg(filename, lgdir))
+    return Partition(sgs, name = name, relations = rels)
 
-def readTruePartsDirectory(filename, warn=False):
+def readTruePartsDirectory(filename, warn=False, lgdir = None, calcInts = True):
     fnames = SymbolData.filenames(filename)
-    return list(map((lambda f: readTruePart(f, lgdir, warn)), fnames))
+    return list(map((lambda f: readTruePart(f, warn, lgdir, calcInts)), fnames))
 
 def stupid_partition(strokes, name = None, relations = None):
     sgs = list(map((lambda s: StrokeGroup([s])), strokes))
