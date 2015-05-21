@@ -151,7 +151,27 @@ def leftToRight(strokeGroups, sgs = None):
     else: #otherwise, they are idents.
         return sorted(strokeGroups, key=(lambda sg: sgs[sg].xmin()))
 
-        
+def roots(sgidents, sgs): #Watch very carefully to make sure classes end up loaded in properly once we are using the stuff we segment and parse. This could be bad.
+    return list(filter((lambda sgi: sgs[sgi].correctClass == '\\sqrt'), sgidents))
+
+def hLines(sgidents, sgs): #Watch very carefully to make sure classes end up loaded in properly once we are using the stuff we segment and parse. This could be bad.
+    hls =  list(filter((lambda sgi: sgs[sgi].correctClass == '-'), sgidents))
+    return sorted(hls, key=(lambda sgi: sgs[sgi].xdist() * -1 )) #Sort them widest to narrowist, since that is the order we want them in.
+
+def strictlyAbove(sgi, sgidents, sgs):
+    xmin = sgs[sgi].xmin()
+    xmax = sgs[sgi].xmax()
+    ymax = sgs[sgi].ymax()
+    return list(filter( (lambda sg: sgs[sg].xmin() >= xmin and sgs[sg].xmax() <= xmax and sgs[sg].ymin() > ymax), sgidents))
+
+def strictlyBelow(sgi, sgidents, sgs):
+    xmin = sgs[sgi].xmin()
+    xmax = sgs[sgi].xmax()
+    ymin = sgs[sgi].ymin()
+    return list(filter( (lambda sg: sgs[sg].xmin() >= xmin and sgs[sg].xmax() <= xmax and sgs[sg].ymax() < ymin), sgidents))
+    
+
+    
 def veryStupidParse(partition): #Assumes the stroke groups are left to right, in order. Not a smart assumption. Just a baseline/testing sort of thing.
     sgs = {}
     for sg in partition.strokeGroups:
@@ -224,21 +244,74 @@ def badParse(partition): #Should never be right. Testing thing.
 
 def recursiveParse(partition): #Loop through a series of reductions like in the optimization pass of a compiler. Some involve recursively parsing regions. Tack on remainder, if any.
     sgs = {}
+    sns = {}
+    sgidents = []
     for sg in partition.strokeGroups:
         sgs[sg.ident] = sg
+        sgidents.append(sg.ident)
+        sns[sg.ident] = SymbolNode(sg, sns, sgs)
 
-    sns = {}
     parse = Parse(sgs)
     if len (sgs) == 0:
         parse.head = None
     else:
-        parse.head = l2r[0]
-        sns[parse.head] = SymbolNode(sgs[l2r[0]], sns, sgs) #pretend these are pointers to get how it works.
+        #parse.head = l2r[0]
+        #sns[parse.head] = SymbolNode(sgs[l2r[0]], sns, sgs) #pretend these are pointers to get how it works.
 
-        
+        recursiveParseReal(sgidents, sns, sgs)
+        parse.head = getHead(sns, sgs)
+
 
     parse.sns = sns
     return parse
+
+
+def recursiveParseReal(sgidents, sns, sgs): #the actual recursive part that tries to parse a set of sgidents.
+    sgis = sgidents
+
+    fracs = hLines(sgidents, sgs)
+    while (len (fracs) > 0):
+        tmp = fracs.pop(0)
+        abv = strictlyAbove(tmp, sgis, sgs)
+        blw = strictlyBelow(tmp, sgis, sgs)
+        print ("\nsgis: ", sgis)
+        print ("abv: ", abv)
+        print ("blw: ", blw, "\n")
+        if(len(abv) > 0 and len(blw) > 0):
+            for i in abv:
+                sgis.remove(i)
+                try:
+                    fracs.remove(i)
+                except ValueError:
+                    pass
+
+            for i in blw:
+                sgis.remove(i)
+                try:
+                    fracs.remove(i)
+                except ValueError:
+                    pass
+
+            recursiveParseReal(abv, sns, sgs)
+            recursiveParseReal(blw, sns, sgs)
+
+            assert(sns[tmp].above == None)
+            assert(sns[tmp].below == None)
+            sns[tmp].above = getHead(sns, sgs, abv)
+            sns[tmp].below = getHead(sns, sgs, blw)
+
+
+
+    #Left to right is a reasonable default after all that stuff, I suppose.
+
+    l2r = leftToRight(sgis, sgs)
+    if len (sgis) != 0:        
+        prev = l2r[0]
+        for sgi in l2r[1:]:
+            assert(sns[prev].right == None)
+            sns[prev].right = sgi
+            sns[sgi] = SymbolNode(sgs[sgi], sns, sgs)
+            prev = sgi
 
     
         
@@ -267,8 +340,9 @@ def parseRel(rel):
     return tuple(splt[1:4])
 
     
-def getHead(sns, sgs):
-    idents = list(sns.keys())
+def getHead(sns, sgs, idents = None):
+    if idents == None:
+        idents = list(sns.keys())
     parentless = set(idents)
     parented = set([])
 

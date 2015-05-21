@@ -5,7 +5,7 @@ import SymbolData
 import Parsing
 
 
-usage = "Usage: $ python test_parsing.py outdir inkmldir [lgdir | vs | ls]"
+usage = "Usage: $ python test_parsing.py outdir inkmldir [lgdir | vs | ls | bad | rec]"
 
 def main(argv=None):
     if argv is None:
@@ -17,7 +17,7 @@ def main(argv=None):
         print("reading inkml files.")
         outdir = argv[0]
         inkmldir = argv[1]
-        if not( argv[2] == 'vs' or argv[2] == 'ls' or argv[2] == 'bad'):
+        if not( argv[2] == 'vs' or argv[2] == 'ls' or argv[2] == 'bad' or argv[2] == 'rec'):
             lgdir = argv[2]
             parts = Segmentation.readTruePartsDirectory(inkmldir, warn=False, lgdir = lgdir, calcInts = False)
         else:
@@ -30,6 +30,8 @@ def main(argv=None):
                 pfunc = Parsing.lessStupidParse
             elif argv[2] == 'bad':
                 pfunc = Parsing.badParse
+            elif argv[2] == 'rec':
+                pfunc = Parsing.recursiveParse
             for part in parts:
                 part.relations = pfunc(part).lg_rel_lines()
         exprs = [part.toExpression() for part in parts] 
