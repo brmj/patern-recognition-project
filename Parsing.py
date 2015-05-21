@@ -373,14 +373,15 @@ def getHead(sns, sgs, idents = None):
     return parentless.pop()
             
             
-SymbolClassesDict = {'baseline': ['\\alpha', '\\cos', '\\gamma', '\\infty', '\\pi', '\\sigma', '\\times', 'a', 'c', 'e', 'm', 'n', 'o', 'r', 's', 'u', 'v', 'w', 'x', 'z', '\\epsilon', '\\varepsilon', '\\iota', '\\kappa', '\\nu', '\\pi', '\\sigma', '\\tau', '\\upsilon', '\\omega'],
-                     'ascender': ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '\\pm', '\\wedge', '\\vee', '\\forall', '\\in', '\\exists', '\\cup', '\\cap', '\\delta', '\\theta', '\\vartheta', '\\lambda', '\\Gamma', '\\Delta', '\\Theta', '\\Lambda', '\\Xi', '\\Pi', '\\Sigma', '\\Upsilon', '\\Phi', '\\Psi', '\\Omega', 'i'],
-                     'descender': ['\\beta', '\\mu', 'g', 'p', 'q', 'y', '\\eta', '\\mu', '\\rho', '\\chi'],
-                     'extender': ['(', ')', '[', ']', '\\supset', '\\subset', '\\notin', '\\zeta', '\\xi', '\\phi', '\\psi', 'j'],
-                     'centered': ['\\times', '\\div', '\\rightarrow', '\\leftarrow', '\\Rightarrow', '-'],
-                     'large_extender': ['\\mid', '{', '}'],
-                     'root': '\\sqrt',
-                     'punctuation': ['\\leq', '\\geq', '\\neq', '\\approx', '\\prime', '\\neg'],
-                     '.': ['\\cdot'],
-                     '...': ['\\cdots'],
-                     ',': ['COMMA'] }
+SymbolClassesDict = 
+    {'baseline': ['\\alpha', '\\cos', '\\gamma', '\\infty', '\\pi', '\\sigma', '\\times', 'a', 'c', 'e', 'm', 'n', 'o', 'r', 's', 'u', 'v', 'w', 'x', 'z', '\\pi', '\\sigma'],
+     'ascender': ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '\\pm', '\\forall', '\\in', '\\exists', '\\Delta', '\\theta', '\\lambda', 'i', '\\lim', '\\sin', '\\tan'],
+     'descender': ['\\beta', '\\mu', 'g', 'p', 'q', 'y', '\\mu'],
+     'extender': ['(', ')', '[', ']', '\\phi', 'j', '\\int', '\\log', '\\sum', '\\{', '\\}', '|'],
+     'centered': ['\\times', '\\div', '\\rightarrow', '-', '+'],
+     'root': '\\sqrt',
+     'punctuation': ['\\leq', '\\geq', '\\neq', '\\prime', '!', '/'， '\\gt', '\\lt'],
+     '.': ['\\cdot'],
+     '...': ['\\ldots'],
+     ',': ['COMMA']
+    }
