@@ -599,6 +599,7 @@ def calcCenterBox(sg, xmeandist, ymeandist):
     sg_xdist = sg.xdist()
     sg_ydist = sg.ydist()
     
+
     cat = classCatDict[sg.correctClass]
 
     #Ultra-simple to start us off while I debug.
@@ -612,4 +613,21 @@ def calcCenterBox(sg, xmeandist, ymeandist):
         return (sg_xmin, sg_xmax, sg_ymin + (0.125 * sg_ydist), sg_ymax - (0.4 * sg_ydist))
     else:
         return (sg_xmin, sg_xmax, sg_ymin + (0.25 * sg_ydist), sg_ymax - (0.25 * sg_ydist))
+'''
+    cat = classCatDict(sg.correctClass)
+
+    # use the ratio of x-y-z in EtoSuzuki paper
+    # x:y:z = 28:51:21
+
+    center_box_height = 51 * float(sg_ydist) / 100
+    center_box_width = sg_xdist
+
+    center_box_lowerX = sg_xmin
+    center_box_lowerY = float(sg_ydist) * 21 / 100 + sg_ymin
+
+    rectangle = PLT.Rectangle((center_box_lowerX, center_box_lowerY), center_box_width, center_box_height, fc='r')
+    PLT.gca().add_patch(rectangle)
+
+'''
+
     
