@@ -256,13 +256,21 @@ def strictlyAbove(sgi, sgidents, sgs):
     xmin = sgs[sgi].xmin()
     xmax = sgs[sgi].xmax()
     ymax = sgs[sgi].ymax()
-    return list(filter( (lambda sg: sgs[sg].xmin()  +  0.25 * sgs[sg].xdist() >= xmin and sgs[sg].xmax() -  0.25 * sgs[sg].xdist() <= xmax and sgs[sg].ymin() > ymax), sgidents))
+    if sgs[sgi].correctClass == '-':
+        return list(filter( (lambda sg: sgs[sg].xmin()  +  0.25 * sgs[sg].xdist() >= xmin and sgs[sg].xmax() -  0.25 * sgs[sg].xdist() <= xmax and sgs[sg].ymin() > ymax), sgidents))
+    else:
+        return list(filter( (lambda sg: sgs[sg].xmin()  +  0.25 * sgs[sg].xdist() >= xmin and sgs[sg].xmax() -  0.75 * sgs[sg].xdist() <= xmax and sgs[sg].ymin() > ymax), sgidents))
+
 
 def strictlyBelow(sgi, sgidents, sgs):
     xmin = sgs[sgi].xmin()
     xmax = sgs[sgi].xmax()
     ymin = sgs[sgi].ymin()
-    return list(filter( (lambda sg: sgs[sg].xmin() +  0.25 * sgs[sg].xdist() >= xmin and sgs[sg].xmax()  -  0.25 * sgs[sg].xdist() <= xmax and sgs[sg].ymax() < ymin), sgidents))
+    if sgs[sgi].correctClass == '-':
+        return list(filter( (lambda sg: sgs[sg].xmin() +  0.25 * sgs[sg].xdist() >= xmin and sgs[sg].xmax()  -  0.25 * sgs[sg].xdist() <= xmax and sgs[sg].ymax() < ymin), sgidents))
+    else:
+        return list(filter( (lambda sg: sgs[sg].xmin() +  0.25 * sgs[sg].xdist() >= xmin and sgs[sg].xmax()  -  0.75 * sgs[sg].xdist() <= xmax and sgs[sg].ymax() < ymin), sgidents))
+
     
 def inRoot (sgi, sgidents, sgs): #Heurisitc for if things are in a root.
     inside = []
