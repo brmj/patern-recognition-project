@@ -155,7 +155,7 @@ def roots(sgidents, sgs): #Watch very carefully to make sure classes end up load
     return list(filter((lambda sgi: sgs[sgi].correctClass == '\\sqrt'), sgidents))
 
 def hLines(sgidents, sgs): #Watch very carefully to make sure classes end up loaded in properly once we are using the stuff we segment and parse. This could be bad.
-    hls =  list(filter((lambda sgi: sgs[sgi].correctClass == '-'), sgidents))
+    hls =  list(filter((lambda sgi: sgs[sgi].correctClass == '-' or sgs[sgi].correctClass == '\\sum' or sgs[sgi].correctClass == '\\int'), sgidents))
     return sorted(hls, key=(lambda sgi: sgs[sgi].xdist() * -1 )) #Sort them widest to narrowist, since that is the order we want them in.
 
 def strictlyAbove(sgi, sgidents, sgs):
@@ -170,6 +170,28 @@ def strictlyBelow(sgi, sgidents, sgs):
     ymin = sgs[sgi].ymin()
     return list(filter( (lambda sg: sgs[sg].xmin() >= xmin and sgs[sg].xmax() <= xmax and sgs[sg].ymax() < ymin), sgidents))
     
+def inRoot (sgi, sgidents, sgs): #Heurisitc for if things are in a root.
+    inside = []
+    above = [] #will have to see if using this helps. If not, tweak it or remove it I suppose.
+    xmin = sgs[sgi].xmin()
+    xmax = sgs[sgi].xmax()
+    ymin = sgs[sgi].ymin()
+    ymax = sgs[sgi].ymax()
+    ydist = sgs[sgi].ydist()
+    for sgid in sgidents: #see if the top left corner is in the bounding box. If so, it is probably inside the root.
+        sg_xdist = sgs[sgid].xdist()
+        sg_x = sgs[sgid].xmin()
+        sg_y = sgs[sgid].ymax()
+
+        if (sg_x > xmin and sg_x + 0.25 * sg_xdist < xmax and sg_y > ymin + 0.25 * ydist and sg_y < ymax):
+            inside.append(sgid)
+        else: #if the bottom right corner is in the bounding box and it is a three, it is probably Above the root, given that it isn't inside.
+             sg_x = sgs[sgid].xmax()
+             sg_y = sgs[sgid].ymin()
+             if (sg_x > xmin and sg_x < xmax and sg_y > ymin and sg_y < ymax and sgs[sgid].correctClass == '3'):
+                 above.append(sgid)
+
+    return (inside, above)
 
     
 def veryStupidParse(partition): #Assumes the stroke groups are left to right, in order. Not a smart assumption. Just a baseline/testing sort of thing.
@@ -274,9 +296,6 @@ def recursiveParseReal(sgidents, sns, sgs): #the actual recursive part that trie
         tmp = fracs.pop(0)
         abv = strictlyAbove(tmp, sgis, sgs)
         blw = strictlyBelow(tmp, sgis, sgs)
-        print ("\nsgis: ", sgis)
-        print ("abv: ", abv)
-        print ("blw: ", blw, "\n")
         if(len(abv) > 0 and len(blw) > 0):
             for i in abv:
                 sgis.remove(i)
@@ -299,6 +318,37 @@ def recursiveParseReal(sgidents, sns, sgs): #the actual recursive part that trie
             assert(sns[tmp].below == None)
             sns[tmp].above = getHead(sns, sgs, abv)
             sns[tmp].below = getHead(sns, sgs, blw)
+
+        
+    #Handle roots pretty much the same way.        
+    rts = roots(sgidents, sgs)
+    while (len (rts) > 0):
+        tmp = rts.pop(0)
+        (inside, above) = inRoot(tmp, sgis, sgs)
+        if(len(inside) > 0 or len(above) > 0):
+            for i in inside:
+                sgis.remove(i)
+                try:
+                    rts.remove(i)
+                except ValueError:
+                    pass
+
+            for i in above:
+                sgis.remove(i)
+                try:
+                    rts.remove(i)
+                except ValueError:
+                    pass
+
+            recursiveParseReal(inside, sns, sgs)
+            recursiveParseReal(above, sns, sgs) #completely overkill for the data we are working with.
+
+            assert(sns[tmp].above == None)
+            assert(sns[tmp].inside == None)
+            if (len(above) > 0):
+                sns[tmp].above = getHead(sns, sgs, above)
+            if (len(inside) > 0):
+                sns[tmp].inside = getHead(sns, sgs, inside)
 
 
 
@@ -349,12 +399,13 @@ def getHead(sns, sgs, idents = None):
     def procChild(id):
         if not id is None:
             if parented.intersection({id}) == {id}:
-                print ("ERROR: not a tree!")
+                None
+                #print ("ERROR: not a tree!")
             elif parentless.intersection({id}) == {id}:
                 parentless.remove(id)
                 parented.add(id)
-            else:
-                print(id , " not anticipated.")
+            #else:
+                #print(id , " not anticipated.")
 
             
     for si in idents:
@@ -366,22 +417,44 @@ def getHead(sns, sgs, idents = None):
         procChild(sn.subscript)
         procChild(sn.superscript)
 
-    if len(parentless) != 1:
-        print ("Warning: multiple trees.")
-        print ("roots: " , parentless)
+    #if len(parentless) != 1:
+        #print ("Warning: multiple trees.")
+        #print ("roots: " , parentless)
         
     return parentless.pop()
             
             
-SymbolClassesDict = 
-    {'baseline': ['\\alpha', '\\cos', '\\gamma', '\\infty', '\\pi', '\\sigma', '\\times', 'a', 'c', 'e', 'm', 'n', 'o', 'r', 's', 'u', 'v', 'w', 'x', 'z', '\\pi', '\\sigma'],
-     'ascender': ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '\\pm', '\\forall', '\\in', '\\exists', '\\Delta', '\\theta', '\\lambda', 'i', '\\lim', '\\sin', '\\tan'],
-     'descender': ['\\beta', '\\mu', 'g', 'p', 'q', 'y', '\\mu'],
-     'extender': ['(', ')', '[', ']', '\\phi', 'j', '\\int', '\\log', '\\sum', '\\{', '\\}', '|'],
-     'centered': ['\\times', '\\div', '\\rightarrow', '-', '+'],
-     'root': '\\sqrt',
-     'punctuation': ['\\leq', '\\geq', '\\neq', '\\prime', '!', '/'， '\\gt', '\\lt'],
-     '.': ['\\cdot'],
-     '...': ['\\ldots'],
-     ',': ['COMMA']
-    }
+SymbolClassesDict = {'baseline': ['\\alpha', '\\cos', '\\gamma', '\\infty', '\\pi', '\\sigma', '\\times', 'a', 'c', 'e', 'm', 'n', 'o', 'r', 's', 'u', 'v', 'w', 'x', 'z'],
+                     'ascender': ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '\\pm', '\\forall', '\\in', '\\exists', '\\Delta', '\\theta', '\\lambda', 'i', '\\lim', '\\sin', '\\tan'],
+                     'descender': ['\\beta', '\\mu', 'g', 'p', 'q', 'y', '\\mu'],
+                     'extender': ['(', ')', '[', ']', '\\phi', 'j', '\\int', '\\log', '\\sum', '\\{', '\\}', '|'],
+                     'centered': ['\\times', '\\div', '\\rightarrow', '-', '+'],
+                     'root': ['\\sqrt'],
+                     'punctuation': ['\\leq', '\\geq', '\\neq', '\\prime', '!', '/', '\\gt', '\\lt'],
+                     'low': ['\\cdot', '\\ldots', 'COMMA'] }
+
+
+def invertDict(d): #used to turn SymbolClassesDict into a form we can use to efficiently look up the category for a given class.
+    items = d.items()
+    n = {}
+    for key, val in items:
+        for thing in val:
+            n[thing] = key
+    return n
+
+classCatDict = invertDict(SymbolClassesDict)
+
+
+def calcCenterBox(sg, xmeandist, ymeandist):
+    sg_xmin = sg.xmin()
+    sg_xmax = sg.xmax()
+    sg_ymin = sg.ymin()
+    sg_ymax = sg.ymax()
+
+    sg_xdist = sg.xdist()
+    sg_ydist = sg.ydist()
+    
+    cat = classCatDict(sg.correctClass)
+
+    
+    
