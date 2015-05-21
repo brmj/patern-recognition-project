@@ -608,6 +608,8 @@ def calcCenterBox(sg, xmeandist, ymeandist):
         return (sg_xmin, sg_xmax, sg_ymin + (0.25 * ymeandist), sg_ymax + (0.75 * ymeandist))
     elif cat == 'baseline':
         return (sg_xmin, sg_xmax, sg_ymin + (0.25 * sg_ydist), sg_ymax )
+    elif cat == 'ascender':
+        return (sg_xmin, sg_xmax, sg_ymin + (0.125 * sg_ydist), sg_ymax - (0.4 * sg_ydist))
     else:
         return (sg_xmin, sg_xmax, sg_ymin + (0.25 * sg_ydist), sg_ymax - (0.25 * sg_ydist))
     
