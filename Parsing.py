@@ -456,5 +456,20 @@ def calcCenterBox(sg, xmeandist, ymeandist):
     
     cat = classCatDict(sg.correctClass)
 
+    # use the ratio of x-y-z in EtoSuzuki paper
+    # x:y:z = 28:51:21
+
+    center_box_height = 51 * float(sg_ydist) / 100
+    center_box_width = sg_xdist
+
+    center_box_lowerX = sg_xmin
+    center_box_lowerY = float(sg_ydist) * 21 / 100 + sg_ymin
+
+    rectangle = PLT.Rectangle((center_box_lowerX, center_box_lowerY), center_box_width, center_box_height, fc='r')
+    PLT.gca().add_patch(rectangle)
+
+
+
+
     
     
