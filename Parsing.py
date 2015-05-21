@@ -281,7 +281,7 @@ SymbolClassesDict =
      'extender': ['(', ')', '[', ']', '\\phi', 'j', '\\int', '\\log', '\\sum', '\\{', '\\}', '|'],
      'centered': ['\\times', '\\div', '\\rightarrow', '-', '+'],
      'root': '\\sqrt',
-     'punctuation': ['\\leq', '\\geq', '\\neq', '\\prime', '!', '/'],
+     'punctuation': ['\\leq', '\\geq', '\\neq', '\\prime', '!', '/'， '\\gt', '\\lt'],
      '.': ['\\cdot'],
      '...': ['\\ldots'],
      ',': ['COMMA']
