@@ -390,6 +390,11 @@ def readTrueSGsFile(filename, warn=False, calcInts = True):
     root = tree.getroot()
     tracegroups = root.findall('./*/{http://www.w3.org/2003/InkML}traceGroup')
     sgs = list(map((lambda t: readTrueSG(root, t, calcInts)), tracegroups))
+    seenIdents = set([])
+    for sg in sgs:
+        if(seenIdents.intersection(set([sg.ident])) != set([])):
+            sg.ident = sg.ident + '_1'
+        seenIdents.add(sg.ident)
     return sgs
 
 def readTrueSGsDirectory(filename, warn=False, calcInts = True):

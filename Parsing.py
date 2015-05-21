@@ -151,6 +151,90 @@ def leftToRight(strokeGroups, sgs = None):
     else: #otherwise, they are idents.
         return sorted(strokeGroups, key=(lambda sg: sgs[sg].xmin()))
 
+def findLine(sgidents, sgs, xmeandist, ymeandist):
+    #print ("findline gets sgidents = ", sgidents)
+    if (len(sgidents) == 0):
+        return ([], [], [])
+    #crappy sweep line algorithm to find a best line for a wordline candidate.
+    leftmost = leftToRight(sgidents, sgs)[0]
+    bottom = sgs[leftmost].ymin()
+    top = sgs[leftmost].ymax()
+    best = (1, bottom)
+
+    cboxes = list(map( (lambda sgi: calcCenterBox(sgs[sgi], xmeandist, ymeandist)), sgidents))
+
+    events = []
+
+    for (xmin, xmax, ymin, ymax) in cboxes:
+        events.append ((ymax, 't'))
+        events.append ((ymin, 'b'))
+
+    events = sorted(events)
+
+    status = 0
+
+    for (yval, typ) in events:
+        if typ == 'b':
+            status = status + 1
+            if (status > best[0] and yval >= bottom and yval <= top):
+                best = (status, yval)
+        else:
+            status = status - 1
+
+    bestLine = best[1]
+
+    sgis = sgidents
+    #print("\nin findline with sgis = ", sgis)
+    above = list(filter((lambda sgi: sgs[sgi].ymin() > bestLine), sgis))
+    #print("above = " , above)
+    
+    for sgi in above:
+        sgis.remove(sgi)
+
+    below = list(filter((lambda sgi: sgs[sgi].ymax() < bestLine), sgis))
+    #print("below = " , below)
+    
+    for sgi in below:
+        sgis.remove(sgi)
+
+    #print ("sgis now equals ", sgis, "\n")
+    return (above, sgis, below)
+
+def seperateBy(sgidents, sgLineIdents, sgs): #I don't trust this code. Not even the logic. Test it well.
+    sgis = sgidents[:]
+    lineXMins = list(map((lambda sgi : sgs[sgi].xmin()), sgLineIdents))
+    grouped = []
+    group = []
+    assert(len(sgLineIdents) > 0)
+    #if (len(sgidents) == 0):
+    #    return grouped
+    lineXMins.pop(0)
+    done = False
+    while (len(lineXMins) > 0 or not done):
+        if (len (sgis) > 0):
+            tmp = sgs[sgis[0]].xmin()
+            if (len(lineXMins) == 0):
+                group = sgis
+                #print(len(lineXMins))
+            else:
+                while (tmp < lineXMins[0]):
+                    group.append(sgis.pop(0))
+                    #print("looping.")
+                    #print(sgis)
+                    if (len (sgis) > 0):
+                        tmp = sgs[sgis[0]].xmin()
+                    else:
+                        tmp = lineXMins[0] + 1 #exit the loop.
+        if(len(lineXMins) > 0):
+            lineXMins.pop(0)
+        else:
+            done = True
+        grouped.append(group)
+        group = []
+
+    return grouped
+
+            
 def roots(sgidents, sgs): #Watch very carefully to make sure classes end up loaded in properly once we are using the stuff we segment and parse. This could be bad.
     return list(filter((lambda sgi: sgs[sgi].correctClass == '\\sqrt'), sgidents))
 
@@ -280,7 +364,10 @@ def recursiveParse(partition): #Loop through a series of reductions like in the 
         #parse.head = l2r[0]
         #sns[parse.head] = SymbolNode(sgs[l2r[0]], sns, sgs) #pretend these are pointers to get how it works.
 
-        recursiveParseReal(sgidents, sns, sgs)
+        #print (partition.name)
+        #print ("ident sets: " , partition.identSetList())
+        #print ("Calling recursiveParseReal on ", sgidents)
+        recursiveParseReal(sgidents, sns, sgs, partition.xdistmean(), partition.ydistmean())
         parse.head = getHead(sns, sgs)
 
 
@@ -288,7 +375,7 @@ def recursiveParse(partition): #Loop through a series of reductions like in the 
     return parse
 
 
-def recursiveParseReal(sgidents, sns, sgs): #the actual recursive part that tries to parse a set of sgidents.
+def recursiveParseReal(sgidents, sns, sgs, xmeandist, ymeandist): #the actual recursive part that tries to parse a set of sgidents.
     sgis = sgidents
 
     fracs = hLines(sgidents, sgs)
@@ -311,8 +398,8 @@ def recursiveParseReal(sgidents, sns, sgs): #the actual recursive part that trie
                 except ValueError:
                     pass
 
-            recursiveParseReal(abv, sns, sgs)
-            recursiveParseReal(blw, sns, sgs)
+            recursiveParseReal(abv, sns, sgs, xmeandist, ymeandist)
+            recursiveParseReal(blw, sns, sgs, xmeandist, ymeandist)
 
             assert(sns[tmp].above == None)
             assert(sns[tmp].below == None)
@@ -321,11 +408,12 @@ def recursiveParseReal(sgidents, sns, sgs): #the actual recursive part that trie
 
         
     #Handle roots pretty much the same way.        
-    rts = roots(sgidents, sgs)
+    rts = roots(sgis, sgs)
     while (len (rts) > 0):
         tmp = rts.pop(0)
         (inside, above) = inRoot(tmp, sgis, sgs)
         if(len(inside) > 0 or len(above) > 0):
+            #print ("inside: " , inside)
             for i in inside:
                 sgis.remove(i)
                 try:
@@ -340,29 +428,85 @@ def recursiveParseReal(sgidents, sns, sgs): #the actual recursive part that trie
                 except ValueError:
                     pass
 
-            recursiveParseReal(inside, sns, sgs)
-            recursiveParseReal(above, sns, sgs) #completely overkill for the data we are working with.
+            recursiveParseReal(inside, sns, sgs, xmeandist, ymeandist)
+            recursiveParseReal(above, sns, sgs, xmeandist, ymeandist) #completely overkill for the data we are working with.
 
             assert(sns[tmp].above == None)
             assert(sns[tmp].inside == None)
             if (len(above) > 0):
                 sns[tmp].above = getHead(sns, sgs, above)
             if (len(inside) > 0):
-                sns[tmp].inside = getHead(sns, sgs, inside)
+                head = getHead(sns, sgs, inside)
+                #print ("adding ", head, " inside root.")
+                sns[tmp].inside = head
+                #print ("sns[tmp].inside = ",  sns[tmp].inside)
+                #print(sns[tmp].lg_rel_lines())
 
+                
+                
+    l2r = leftToRight(sgis, sgs)
+    if len (sgis) != 0:
+        #print("Calling findline with sgis = ", sgis)
+        (sup, line, sub) = findLine(l2r[:], sgs, xmeandist, ymeandist)
+        #print ("sgis: " , sgis)
+        #print (" => ", (sup, line, sub))
+        supGroups = seperateBy(sup, line, sgs)
+        subGroups = seperateBy(sub, line, sgs)
 
+        
+        n = 0
+        for group in supGroups:
+            if (len(group) > 0):
+                #print ("group: ", group)
+                #print ("sgis: ", sgis)
+                for i in group:
+                    sgis.remove(i)
+                #print("parsing superscript " , group)
+                recursiveParseReal(group, sns, sgs, xmeandist, ymeandist)
+                head = getHead(sns, sgs, group)
+                sns[line[n]].superscript = getHead(sns, sgs, group)
+            n = n + 1
 
+        n = 0
+        for group in subGroups:
+            if (len(group) > 0):
+                for i in group:
+                    sgis.remove(i)
+                #print("parsing subscript " , group)
+                recursiveParseReal(group, sns, sgs, xmeandist, ymeandist)
+                head = getHead(sns, sgs, group)
+                sns[line[n]].subscript = getHead(sns, sgs, group)
+            n = n + 1
+
+        #print ("l2r " , line)
+        prev = line[0]
+        for sgi in line[1:]:
+            #print("looping l2r")
+            #print (l2r)
+            #print (prev)
+            #print (sns[prev].right)
+            #print(sns[prev].lg_rel_lines())
+            assert(sns[prev].right == None)
+            sns[prev].right = sgi
+            prev = sgi
+
+    '''
+            
     #Left to right is a reasonable default after all that stuff, I suppose.
-
+    #print(sgidents)
     l2r = leftToRight(sgis, sgs)
     if len (sgis) != 0:        
         prev = l2r[0]
         for sgi in l2r[1:]:
+            #print (l2r)
+            #print (prev)
+            #print (sns[prev].right)
+            #print(sns[prev].lg_rel_lines())
             assert(sns[prev].right == None)
             sns[prev].right = sgi
-            sns[sgi] = SymbolNode(sgs[sgi], sns, sgs)
+            #sns[sgi] = SymbolNode(sgs[sgi], sns, sgs)
             prev = sgi
-
+    '''
     
         
 def trueParse(partition, rels = None): #MUST be a true segmentation with ground truth idents and matching relationship lines from an lg file.
@@ -425,13 +569,14 @@ def getHead(sns, sgs, idents = None):
             
             
 SymbolClassesDict = {'baseline': ['\\alpha', '\\cos', '\\gamma', '\\infty', '\\pi', '\\sigma', '\\times', 'a', 'c', 'e', 'm', 'n', 'o', 'r', 's', 'u', 'v', 'w', 'x', 'z'],
-                     'ascender': ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '\\pm', '\\forall', '\\in', '\\exists', '\\Delta', '\\theta', '\\lambda', 'i', '\\lim', '\\sin', '\\tan'],
+                     'ascender': ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '\\pm', '\\forall', '\\in', '\\exists', '\\Delta', '\\theta', '\\lambda', '\\lim', '\\sin', '\\tan', 'b', 'd', 'f', 'h', 'i', 'k', 'l', 't'],
                      'descender': ['\\beta', '\\mu', 'g', 'p', 'q', 'y', '\\mu'],
                      'extender': ['(', ')', '[', ']', '\\phi', 'j', '\\int', '\\log', '\\sum', '\\{', '\\}', '|'],
-                     'centered': ['\\times', '\\div', '\\rightarrow', '-', '+'],
+                     'centered': ['\\times', '\\div', '\\rightarrow', '+', '='],
+                     'line': ['\\cdot', '-'],
                      'root': ['\\sqrt'],
                      'punctuation': ['\\leq', '\\geq', '\\neq', '\\prime', '!', '/', '\\gt', '\\lt'],
-                     'low': ['\\cdot', '\\ldots', 'COMMA'] }
+                     'low': ['\\ldots', 'COMMA', '.'] }
 
 
 def invertDict(d): #used to turn SymbolClassesDict into a form we can use to efficiently look up the category for a given class.
@@ -454,7 +599,15 @@ def calcCenterBox(sg, xmeandist, ymeandist):
     sg_xdist = sg.xdist()
     sg_ydist = sg.ydist()
     
-    cat = classCatDict(sg.correctClass)
+    cat = classCatDict[sg.correctClass]
 
-    
+    #Ultra-simple to start us off while I debug.
+    if cat == 'line':
+        return (sg_xmin, sg_xmax, sg_ymin - (0.25 * ymeandist), sg_ymax + (0.25 * ymeandist))
+    elif cat == 'low':
+        return (sg_xmin, sg_xmax, sg_ymin + (0.25 * ymeandist), sg_ymax + (0.75 * ymeandist))
+    elif cat == 'baseline':
+        return (sg_xmin, sg_xmax, sg_ymin + (0.25 * sg_ydist), sg_ymax )
+    else:
+        return (sg_xmin, sg_xmax, sg_ymin + (0.25 * sg_ydist), sg_ymax - (0.25 * sg_ydist))
     
