@@ -256,13 +256,13 @@ def strictlyAbove(sgi, sgidents, sgs):
     xmin = sgs[sgi].xmin()
     xmax = sgs[sgi].xmax()
     ymax = sgs[sgi].ymax()
-    return list(filter( (lambda sg: sgs[sg].xmin() >= xmin and sgs[sg].xmax() <= xmax and sgs[sg].ymin() > ymax), sgidents))
+    return list(filter( (lambda sg: sgs[sg].xmin()  +  0.25 * sgs[sg].xdist() >= xmin and sgs[sg].xmax() -  0.25 * sgs[sg].xdist() <= xmax and sgs[sg].ymin() > ymax), sgidents))
 
 def strictlyBelow(sgi, sgidents, sgs):
     xmin = sgs[sgi].xmin()
     xmax = sgs[sgi].xmax()
     ymin = sgs[sgi].ymin()
-    return list(filter( (lambda sg: sgs[sg].xmin() >= xmin and sgs[sg].xmax() <= xmax and sgs[sg].ymax() < ymin), sgidents))
+    return list(filter( (lambda sg: sgs[sg].xmin() +  0.25 * sgs[sg].xdist() >= xmin and sgs[sg].xmax()  -  0.25 * sgs[sg].xdist() <= xmax and sgs[sg].ymax() < ymin), sgidents))
     
 def inRoot (sgi, sgidents, sgs): #Heurisitc for if things are in a root.
     inside = []
@@ -617,11 +617,13 @@ def calcCenterBox(sg, xmeandist, ymeandist):
     elif cat == 'low':
         return (sg_xmin, sg_xmax, sg_ymin + (0.25 * ymeandist), sg_ymax + (0.75 * ymeandist))
     elif cat == 'baseline':
-        return (sg_xmin, sg_xmax, sg_ymin + (0.25 * sg_ydist), sg_ymax )
+        return (sg_xmin, sg_xmax, sg_ymin + (0.25 * sg_ydist), sg_ymax - (0.125 * sg_ydist) )
     elif cat == 'centered':
         return (sg_xmin, sg_xmax, sg_ymin, sg_ymax )
     elif cat == 'ascender':
-        return (sg_xmin, sg_xmax, sg_ymin + (0.125 * sg_ydist), sg_ymax - (0.25 * sg_ydist))
+        return (sg_xmin, sg_xmax, sg_ymin + (0.2 * sg_ydist), sg_ymax - (0.25 * sg_ydist))
+    elif cat == 'descender':
+        return (sg_xmin, sg_xmax, sg_ymin + (0.5 * sg_ydist), sg_ymax - (0.125 * sg_ydist))
     else:
         return (sg_xmin, sg_xmax, sg_ymin + (0.25 * sg_ydist), sg_ymax - (0.25 * sg_ydist))
 '''

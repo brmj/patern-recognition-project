@@ -211,7 +211,7 @@ class Expression:
     def writeLG (self, directory, clss = None):
         self.filename = os.path.join(directory, (self.name + '.lg'))
         if (clss == None):
-            print ("none clss")
+            #print ("none clss")
             if self.classes == []:
                 self.clss = list(map ((lambda s: s.correctClass), self.symbols))
             else:
