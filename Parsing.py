@@ -157,12 +157,16 @@ def findLine(sgidents, sgs, xmeandist, ymeandist):
         return ([], [], [])
     #crappy sweep line algorithm to find a best line for a wordline candidate.
     leftmost = leftToRight(sgidents, sgs)[0]
-    bottom = sgs[leftmost].ymin()
-    top = sgs[leftmost].ymax()
-    best = (1, bottom)
+    (xmin_l, xmax_l, bottom, top) = calcCenterBox(sgs[leftmost], xmeandist, ymeandist)
+    #bottom = sgs[leftmost].ymin()
+    #top = sgs[leftmost].ymax()
+    #print ("leftmost: " , leftmost)
+    #print (bottom, " ---- " , top)
+    best = (0, bottom)
 
     cboxes = list(map( (lambda sgi: calcCenterBox(sgs[sgi], xmeandist, ymeandist)), sgidents))
 
+    
     events = []
 
     for (xmin, xmax, ymin, ymax) in cboxes:
@@ -174,24 +178,30 @@ def findLine(sgidents, sgs, xmeandist, ymeandist):
     status = 0
 
     for (yval, typ) in events:
+        #print((yval, typ))
         if typ == 'b':
             status = status + 1
+            #print (status > best[0], " " ,  yval >= bottom, " ", yval <= top)
+            #print (bottom, " ---- " , top)
             if (status > best[0] and yval >= bottom and yval <= top):
                 best = (status, yval)
         else:
             status = status - 1
 
+        #print(status)
+
+    #print("##Best:  ", best)
     bestLine = best[1]
 
     sgis = sgidents
     #print("\nin findline with sgis = ", sgis)
-    above = list(filter((lambda sgi: sgs[sgi].ymin() > bestLine), sgis))
+    above = list(filter((lambda sgi: (calcCenterBox(sgs[sgi], xmeandist, ymeandist))[2] > bestLine), sgis))
     #print("above = " , above)
     
     for sgi in above:
         sgis.remove(sgi)
 
-    below = list(filter((lambda sgi: sgs[sgi].ymax() < bestLine), sgis))
+    below = list(filter((lambda sgi: (calcCenterBox(sgs[sgi], xmeandist, ymeandist))[3] < bestLine), sgis))
     #print("below = " , below)
     
     for sgi in below:
@@ -601,7 +611,6 @@ def calcCenterBox(sg, xmeandist, ymeandist):
     
 
     cat = classCatDict[sg.correctClass]
-
     #Ultra-simple to start us off while I debug.
     if cat == 'line':
         return (sg_xmin, sg_xmax, sg_ymin - (0.25 * ymeandist), sg_ymax + (0.25 * ymeandist))
@@ -609,8 +618,10 @@ def calcCenterBox(sg, xmeandist, ymeandist):
         return (sg_xmin, sg_xmax, sg_ymin + (0.25 * ymeandist), sg_ymax + (0.75 * ymeandist))
     elif cat == 'baseline':
         return (sg_xmin, sg_xmax, sg_ymin + (0.25 * sg_ydist), sg_ymax )
+    elif cat == 'centered':
+        return (sg_xmin, sg_xmax, sg_ymin, sg_ymax )
     elif cat == 'ascender':
-        return (sg_xmin, sg_xmax, sg_ymin + (0.125 * sg_ydist), sg_ymax - (0.4 * sg_ydist))
+        return (sg_xmin, sg_xmax, sg_ymin + (0.125 * sg_ydist), sg_ymax - (0.25 * sg_ydist))
     else:
         return (sg_xmin, sg_xmax, sg_ymin + (0.25 * sg_ydist), sg_ymax - (0.25 * sg_ydist))
 '''
