@@ -10,14 +10,20 @@ usage = "Usage: $ python test_parsing.py outdir inkmldir [lgdir | vs | ls | bad 
 def main(argv=None):
     if argv is None:
         argv = sys.argv[1:] #dirty trick to make this convenient in the interpreter.
-    if (len (argv) != 3): 
+    if (len (argv) < 2 or len (argv) > 3): 
         print(("bad number of args:" , len(argv)))
         print(usage)
     else:
         print("reading inkml files.")
         outdir = argv[0]
         inkmldir = argv[1]
-        if not( argv[2] == 'vs' or argv[2] == 'ls' or argv[2] == 'bad' or argv[2] == 'rec'):
+        if len(argv) == 2:
+            parts = Segmentation.readTruePartsDirectory(inkmldir, warn=False, calcInts = False)
+            print("Parsing.")
+            pfunc = Parsing.recursiveParse
+            for part in parts:
+                part.relations = pfunc(part).lg_rel_lines()
+        elif not( argv[2] == 'vs' or argv[2] == 'ls' or argv[2] == 'bad' or argv[2] == 'rec'):
             lgdir = argv[2]
             parts = Segmentation.readTruePartsDirectory(inkmldir, warn=False, lgdir = lgdir, calcInts = False)
         else:

@@ -1,6 +1,24 @@
+--------------------------------------------------------------------------------
+Testing parsing alone:
+--------------------------------------------------------------------------------
+Usage: $ python test_parsing.py outdir inkmldir
+
+test.py takes an output directory and a directory of inkml files to test.
+
+
 
 --------------------------------------------------------------------------------
-Testing:
+Testing segmentation, classification, parsing:
+--------------------------------------------------------------------------------
+Usage: $ python test_all.py stateFilename outdir inkmldir
+
+test_all.py takes a filename for a serialized classifier, an output directory, and
+a directory of inkml files to test.
+
+
+
+--------------------------------------------------------------------------------
+Testing segmentation and classification:
 --------------------------------------------------------------------------------
 Usage: $ python test.py stateFilename outdir (testFile.dat | inkmldir lgdir)
 
@@ -9,8 +27,6 @@ either a pickled testing data set or directories for inkml and lg files to test.
 The lg files are used to ensure that the files created in the output directory
 are as expected.
 
-After it has run, it will calculate it's recognition rate, and the new lg files
-will be in outdir.
 
 --------------------------------------------------------------------------------
 Training
