@@ -4,6 +4,7 @@ import sklearn.ensemble
 import sklearn.decomposition
 import Features
 import SymbolData
+import Segmentation
 import matplotlib.pyplot as plt
 from sklearn.metrics import accuracy_score
 from functools import reduce
@@ -68,7 +69,7 @@ def classifyExpressions(expressions, keys, model, pca, renormalize=True, showAcc
     
     for expr in expressions:
         correct, predicted =  classifyExpression(expr, keys, model, pca, renormalize)
-        #assert (len(correct) == len(predicted))
+       #assert (len(correct) == len(predicted))
 #        if s:
 #            cors = cors + [correct]
 #        if correct == None:
@@ -104,6 +105,35 @@ def classifyExpression(expression, keys, model, pca, renormalize=True):
     f = (lambda p: keys[p])
     expression.classes = map (f, pred)
     return (NP.array(SymbolData.classNumbers(symbs, keys)), pred)
+
+def classifyPartitions(partitions, keys, model, pca, renormalize=True, showAcc = False):
+    return list(map( (lambda p: classifyPartition(p, keys, model, pca, renormalize)), partitions))
+
+def classifyPartition(partition, keys, model, pca, renormalize=True):
+    if len(partition.strokeGroups) == 0:
+        return partition
+    expression = partition.toExpression()
+    symbs = expression.symbols
+    if renormalize:
+        symbs = SymbolData.normalize(symbs, 99)
+    f = Features.features(symbs)
+    if (len (symbs) == 0):
+        print(expression.name, " has no valid symbols!")
+        return ([], [])
+    if (pca != None):
+        f = pca.transform(f)
+
+    #print (f)
+    pred = model.predict(f)
+    assert (max(pred) < len(keys))
+    
+    f = (lambda p: keys[p])
+    expression.classes = map (f, pred)
+    i = 0
+    for cls in expression.classes:
+        partition.strokeGroups[i].correctClass = cls
+        i = i + 1
+    return partition
 
 def classifySymbol(symbol, model, pca, renormalize = True):
     symbs = [symbol]

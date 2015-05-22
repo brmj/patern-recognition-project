@@ -141,6 +141,7 @@ class Parse:
 
     def lg_rel_lines(self):
         if self.head == None:
+            #print ("Headless!")
             return []
         else:
             return self.sns[self.head].lg_rel_lines()
@@ -375,6 +376,7 @@ def recursiveParse(partition): #Loop through a series of reductions like in the 
         sgidents.append(sg.ident)
         sns[sg.ident] = SymbolNode(sg, sns, sgs)
 
+    #print([sg.ident for gs in sgs])
     parse = Parse(sgs)
     if len (sgs) == 0:
         parse.head = None

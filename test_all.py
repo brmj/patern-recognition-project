@@ -6,9 +6,10 @@ import SymbolData
 import Classification
 import Features
 import Segmentation
+import Parsing
 from sklearn.metrics import accuracy_score
 
-usage = "Usage: $ python test.py stateFilename outdir inkmldir"
+usage = "Usage: $ python test_all.py stateFilename outdir inkmldir"
 
 def main(argv=None):
     if argv is None:
@@ -33,21 +34,26 @@ def main(argv=None):
         #exprs = SymbolData.readAndSegmentDirectory(argv[2],  Segmentation.stupid_partition)
         #exprs = SymbolData.readAndSegmentDirectory(argv[2], cleverpart)
         #exprs = SymbolData.readInkmlDirectory(argv[2], argv[3])
-        exprs = Segmentation.readAndSegmentDirectory(argv[2], mypart)
-
+        parts = Segmentation.readAndSegmentDirectory(argv[2], mypart, raw=True)
+        
+        
  
         #code to write out results goes here.
         print ("Classifying")
-        truths, preds = Classification.classifyExpressions(exprs, keys, model, pca, showAcc = True)
+        parts = Classification.classifyPartitions(parts, keys, model, pca, showAcc = True)
+        print ("Parsing")
+        pfunc = Parsing.recursiveParse
+        for part in parts:
+            if (len(part.strokeGroups) != 0):
+                part.relations = pfunc(part).lg_rel_lines()
+            #print(part.relations)
+        exprs = [part.toExpression() for part in parts] 
+ 
+        #code to write out results goes here.
         print ("Writing LG files.")
-        i = 0
+        outdir = argv[1]
         for expr in exprs:
-            #if (preds[i] != -1): 
-            f = (lambda p: keys[p])
-            #    expr.classes = map (f, preds[i])
-
-            expr.writeLG(argv[1],clss =  map (f, preds[i]) )
-            i = i + 1
+            expr.writeLG(outdir )
             
 if __name__ == "__main__":
     sys.exit(main())

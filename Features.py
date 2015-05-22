@@ -101,7 +101,7 @@ def symbolFeatures(symbol):
     # append intersections feature
     f = NP.append(f,numIntersections(symbol))
     f = NP.append(f,totlen(symbol))
-    f = NP.append(f,meanfracs(symbol))
+#    f = NP.append(f,meanfracs(symbol))
 ##    f = NP.append(f,xvar(symbol))
 ##    f = NP.append(f,yvar(symbol))
     f = NP.append(f,getStatFeatures(symbol))

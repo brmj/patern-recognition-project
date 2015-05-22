@@ -42,6 +42,13 @@ class StrokeGroup:
         #print("sg ", set(map((lambda s: s.ident),self.strokes)) )
         return set(map((lambda s: s.ident),self.strokes)) 
 
+    def genIdent(self):
+        self.newIdent = ""
+        for s in self.strokes:
+            self.newIdent = self.newIdent + (str(s.ident) + ":")
+        self.ident = self.newIdent
+
+        
     def plot(self, show = True, clear = True):
         if clear:
             PLT.clf()
@@ -51,11 +58,16 @@ class StrokeGroup:
             PLT.show()
 
     def copy(self):
-        return StrokeGroup(list(map ((lambda s: s.copy()), self.strokes)), intersections = list(self.intersections), correctClass = self.correctClass, norm = self.norm, ident = self.ident)
+        return StrokeGroup(list(map ((lambda s: s.copy()), self.strokes)), intersections = self.intersections, correctClass = self.correctClass, norm = self.norm, ident = self.ident)
             
     def merge(self, other, inPlace = True):
-        self.newInts = set(self.intersections).union(set(other.intersections)).union(set(self.calcIntersections(other)))
-        if inPlace:
+
+        self.myints = set(self.intersections)
+        self.otherints = set(other.intersections)
+        self.ourints = set(self.calcIntersections(other))
+        self.newInts = self.myints.union(self.otherints).union(self.ourints)
+        #self.newInts = set((self.intersections)).union(set((other.intersections)).union(set(self.calcIntersections(other))))
+        if (inPlace):
             self.strokes = self.strokes + other.strokes
             self.intersections = self.newInts
             return self
@@ -145,6 +157,7 @@ class StrokeGroup:
                     self.strokePairs.append((self.stroke1, self.stroke2))
 
         for (stroke1, stroke2) in self.strokePairs:
+            #print(stroke1.intersections(stroke2))
             self.newints = self.newints + stroke1.intersections(stroke2)
         return self.newints
              
@@ -168,6 +181,7 @@ class Partition:
     def __init__(self, strokeGroups, name = None, relations = None):
         self.strokeGroups = strokeGroups
         self.name = name
+        
         self.relations = relations
 
 
@@ -193,6 +207,11 @@ class Partition:
             return self.strokeGroups[ self.isetl.index(iset) ]
         else:
             return None
+
+    def genIdents(self):
+        for sg in self.strokeGroups:
+            if sg.ident is None:
+                sg.genIdent()
 
     def xdistmean(self):
         if (len (self.strokeGroups) == 0):
@@ -245,8 +264,10 @@ class Partition:
 
 def readAndSegment(filename, segfun, warn = False, raw = False):
     strokes = SymbolData.readFileStrokes(filename, warn)
+    rdir, filenm = os.path.split(filename)
+    name, ext = os.path.splitext(filenm)
     partition = segfun(strokes)
-    name, ext = os.path.splitext(filename)
+    partition.name = name
     if raw:
         return partition
     else:
@@ -255,6 +276,8 @@ def readAndSegment(filename, segfun, warn = False, raw = False):
 def readAndSegmentDirectory(filename, segfun, warn=False, raw = False):
     fnames = SymbolData.filenames(filename)
     return list(map((lambda f: readAndSegment(f, segfun, warn, raw)), fnames))
+
+
             
 def comparePartitions(part1, part2, warn = False):
     correct = 0
@@ -330,8 +353,10 @@ def directoryTrainData(filename):
 
 
 
-def trainSegmentationClassifier(filename, model = Classification.makeRF(), pca_num = None):
+def trainSegmentationClassifier(filename, model = None, pca_num = None):
     data =  directoryTrainData(filename)
+    if model == None:
+        model = Classification.makeRF()
     features = list(map((lambda d:d[0]), data))
     #print(features)
     classes = list(map((lambda d:d[1]), data))
@@ -570,8 +595,10 @@ def mkMergeClassifiedPart(model, pca = None):
             if (not current is None):
                 #print("adding leftover: ", current)
                 newGroups.append(current)
-            return Partition(newGroups, part.name, part.relations)
+            part2 =  Partition(newGroups, part.name, part.relations)
         else:
-            return part
+            part2 = part
+        part2.genIdents()    
+        return part2
 
     return partFun
