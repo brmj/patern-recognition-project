@@ -1,3 +1,4 @@
+import math
 import matplotlib as MP
 import numpy as NP
 import matplotlib.pyplot as PLT
@@ -210,6 +211,73 @@ def findLine(sgidents, sgs, xmeandist, ymeandist):
 
     #print ("sgis now equals ", sgis, "\n")
     return (above, sgis, below)
+
+def findLine_alt(sgidents, sgs, xmeandist, ymeandist):
+    #print ("findline gets sgidents = ", sgidents)
+    if (len(sgidents) == 0):
+        return ([], [], [])
+    #crappy sweep line algorithm to find a best line for a wordline candidate.
+    leftmost = leftToRight(sgidents, sgs)[0]
+    (xmin_l, xmax_l, bottom, top) = calcCenterBox(sgs[leftmost], xmeandist, ymeandist)
+    #bottom = sgs[leftmost].ymin()
+    #top = sgs[leftmost].ymax()
+    #print ("leftmost: " , leftmost)
+    #print (bottom, " ---- " , top)
+    best = (0, bottom)
+
+    cboxes = list(map( (lambda sgi: calcCenterBox(sgs[sgi], xmeandist, ymeandist)), sgidents))
+
+    
+    events = []
+
+    def cornerDist (xmin, xmax, ymin, ymax):
+        xdist = (xmax - xmin)
+        ydist = (ymax - ymin)
+        return (math.sqrt(math.pow(xdist, 2) + math.pow(ydist, 2)))
+        
+
+    for (xmin, xmax, ymin, ymax) in cboxes:
+        events.append ((ymax, 't', math.pow(cornerDist(xmin, xmax, ymin, ymax), 4)))  # forth power determined best integer power by grid search.
+        events.append ((ymin, 'b', math.pow(cornerDist(xmin, xmax, ymin, ymax), 4)))  # Trying to do better by tweaking this is near-useless. Very marginal differences.
+
+    events = sorted(events)
+
+    status = 0
+
+    for (yval, typ, dist) in events:
+        #print((yval, typ))
+        if typ == 'b':
+            status = status + dist
+            #print (status > best[0], " " ,  yval >= bottom, " ", yval <= top)
+            #print (bottom, " ---- " , top)
+            if (status > best[0] and yval >= bottom and yval <= top):
+                best = (status, yval)
+        else:
+            status = status - dist
+
+        #print(status)
+
+    #print("##Best:  ", best)
+    bestLine = best[1]
+
+    sgis = sgidents
+    #print("\nin findline with sgis = ", sgis)
+    above = list(filter((lambda sgi: (calcCenterBox(sgs[sgi], xmeandist, ymeandist))[2] > bestLine), sgis))
+    #print("above = " , above)
+    
+    for sgi in above:
+        sgis.remove(sgi)
+
+    below = list(filter((lambda sgi: (calcCenterBox(sgs[sgi], xmeandist, ymeandist))[3] < bestLine), sgis))
+    #print("below = " , below)
+    
+    for sgi in below:
+        sgis.remove(sgi)
+
+    #print ("sgis now equals ", sgis, "\n")
+    return (above, sgis, below)
+
+
 
 def seperateBy(sgidents, sgLineIdents, sgs): #I don't trust this code. Not even the logic. Test it well.
     sgis = sgidents[:]
@@ -467,7 +535,7 @@ def recursiveParseReal(sgidents, sns, sgs, xmeandist, ymeandist): #the actual re
     l2r = leftToRight(sgis, sgs)
     if len (sgis) != 0:
         #print("Calling findline with sgis = ", sgis)
-        (sup, line, sub) = findLine(l2r[:], sgs, xmeandist, ymeandist)
+        (sup, line, sub) = findLine_alt(l2r[:], sgs, xmeandist, ymeandist)
         #print ("sgis: " , sgis)
         #print (" => ", (sup, line, sub))
         supGroups = seperateBy(sup, line, sgs)
